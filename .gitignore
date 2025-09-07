@@ -1,0 +1,78 @@
+# Node.js modules
+node_modules/
+
+# Environment variables
+.env
+.env.* # For environment-specific files like .env.development
+
+.claude
+.claude/
+
+DEPLOYMENT.md
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+
+#test scripts
+scripts/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+
+# Dependency directories
+jspm_packages/
+bower_components/
+
+# Test coverage
+coverage/
+
+# Cache files
+*.cache
+.cache/
+.nyc_output/
+
+# TypeScript files
+*.tsbuildinfo
+
+# Generated files
+*.lock
+*.bak
+*.tmp
+
+# Optional npm and yarn directories
+.npm/
+.yarn/
+.pnp.*
+.pnp.js
+
+# Git files
+.git/
+*.orig
+
+# Temporary files
+tmp/
+*.tmp
+*.temp
+
+# Generated documentation
+docs/
+
+# Ignore any custom configuration files
+config/*.local.js
+config/*.local.json
