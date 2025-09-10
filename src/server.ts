@@ -43,13 +43,10 @@ class Server {
       })
     );
 
-    // CORS configuration
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-      .split(",")
-      .filter(Boolean);
+    // CORS configuration - Allow all origins for now
     this.app.use(
       cors({
-        origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+        origin: true,
         credentials: true,
         methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
