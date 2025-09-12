@@ -101,6 +101,7 @@ export interface IUser extends Document {
   username: string; // Username for @handles, profiles, etc.
   verificationLevel: string;
   abstractWallet?: IAbstractWallet; // Abstract wallet created during signup
+  wallets: IWalletInfo[]; // Multiple wallet support
   wavzProfile: IWavzProfile; // Wavz system data
   insightIQ?: IInsightIQIntegration; // InsightIQ integration data
   preferences: {
@@ -183,6 +184,52 @@ const UserSchema: Schema<IUser> = new Schema(
         default: Date.now,
       },
     },
+
+    // Multiple wallets support
+    wallets: [
+      {
+        id: {
+          type: String,
+          required: true,
+          default: () => new mongoose.Types.ObjectId().toString(),
+        },
+        address: {
+          type: String,
+          required: true,
+          lowercase: true,
+        },
+        type: {
+          type: String,
+          enum: ["abstract", "connected", "external"],
+          required: true,
+        },
+        provider: {
+          type: String,
+          required: false,
+        },
+        label: {
+          type: String,
+          required: false,
+          maxlength: 50,
+        },
+        isDefault: {
+          type: Boolean,
+          default: false,
+        },
+        isVerified: {
+          type: Boolean,
+          default: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        lastUsed: {
+          type: Date,
+          required: false,
+        },
+      },
+    ],
 
     // Wavz Profile Schema
     wavzProfile: {
@@ -365,6 +412,8 @@ const UserSchema: Schema<IUser> = new Schema(
 // Index for performance (only add indexes not covered by unique: true)
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ "abstractWallet.address": 1 });
+UserSchema.index({ "wallets.address": 1 });
+UserSchema.index({ "wallets.id": 1 });
 UserSchema.index({ "insightIQ.userId": 1 });
 
 // Hash password before saving

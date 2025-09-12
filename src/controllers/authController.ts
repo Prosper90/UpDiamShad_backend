@@ -208,6 +208,23 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
     await newUser.save();
 
+    // Initialize wallets array with the abstract wallet if it exists
+    if (abstractWallet?.address) {
+      newUser.wallets = [
+        {
+          id: 'abstract-wallet',
+          address: abstractWallet.address.toLowerCase(),
+          type: 'abstract',
+          provider: 'System Generated',
+          label: 'Default Wallet',
+          isDefault: true,
+          isVerified: true,
+          createdAt: abstractWallet.createdAt,
+        }
+      ];
+      await newUser.save();
+    }
+
     // Generate JWT token
     const token = generateToken({
       userId: newUser._id.toString(),

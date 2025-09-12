@@ -88,36 +88,79 @@ router.post(
  * @desc Get current user profile
  * @access Private
  */
-router.get("/me", authenticateToken, (req: Request, res: Response): void => {
-  if (!req.user) {
-    res.status(401).json({
-      success: false,
-      message: "User not found",
-    });
-    return;
-  }
+router.get("/me", authenticateToken, async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
 
-  res.json({
-    success: true,
-    data: {
-      user: {
-        id: req.user._id,
-        email: req.user.email,
-        displayName: req.user.displayName,
-        username: req.user.username,
-        verificationLevel: req.user.verificationLevel,
-        wavzProfile: req.user.wavzProfile,
-        insightIQ: req.user.insightIQ,
-        abstractWallet: {
-          address: req.user.abstractWallet?.address,
-          network: req.user.abstractWallet?.network,
+    // Migration: Ensure abstract wallet is in wallets array for existing users
+    let needsMigration = false;
+    if (req.user.abstractWallet?.address) {
+      const hasAbstractWalletInArray = req.user.wallets?.some(
+        w => w.address.toLowerCase() === req.user.abstractWallet?.address.toLowerCase() || w.id === 'abstract-wallet'
+      );
+
+      if (!hasAbstractWalletInArray) {
+        needsMigration = true;
+        if (!req.user.wallets) {
+          req.user.wallets = [];
+        }
+        
+        req.user.wallets.push({
+          id: 'abstract-wallet',
+          address: req.user.abstractWallet.address.toLowerCase(),
+          type: 'abstract',
+          provider: 'System Generated',
+          label: 'Default Wallet',
+          isDefault: req.user.wallets.length === 0, // Make default if no other wallets
+          isVerified: true,
+          createdAt: req.user.abstractWallet.createdAt,
+        });
+      }
+    }
+
+    // Save migration if needed
+    if (needsMigration) {
+      await req.user.save();
+    }
+
+    // Combine abstract wallet and wallets for response
+    const allWallets = [...(req.user.wallets || [])];
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: req.user._id,
+          email: req.user.email,
+          displayName: req.user.displayName,
+          username: req.user.username,
+          verificationLevel: req.user.verificationLevel,
+          wavzProfile: req.user.wavzProfile,
+          insightIQ: req.user.insightIQ,
+          abstractWallet: {
+            address: req.user.abstractWallet?.address,
+            network: req.user.abstractWallet?.network,
+          },
+          wallets: allWallets,
+          preferences: req.user.preferences,
+          lastLogin: req.user.lastLogin,
+          createdAt: req.user.createdAt,
         },
-        preferences: req.user.preferences,
-        lastLogin: req.user.lastLogin,
-        createdAt: req.user.createdAt,
       },
-    },
-  });
+    });
+  } catch (error) {
+    logger.error("Error in /auth/me:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 });
 
 /**
