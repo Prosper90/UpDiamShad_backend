@@ -13,6 +13,8 @@ import authRoutes from "./routes/auth";
 import walletRoutes from "./routes/wallet";
 import insightIqRoutes from "./routes/insightiq";
 import onboardingRoutes from "./routes/onboarding";
+import whitelistRoutes from "./routes/whitelist";
+import veriffRoutes from "./routes/veriff";
 
 
 class Server {
@@ -97,6 +99,8 @@ class Server {
     this.app.use("/api/wallet", walletRoutes);
     this.app.use("/api/insightiq", insightIqRoutes);
     this.app.use("/api/onboarding", onboardingRoutes);
+    this.app.use("/api/whitelist", whitelistRoutes);
+    this.app.use("/api/veriff", veriffRoutes);
 
     // 404 handler for unknown routes
     this.app.use("*", (req: Request, res: Response) => {

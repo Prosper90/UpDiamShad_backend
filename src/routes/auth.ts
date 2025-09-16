@@ -102,7 +102,7 @@ router.get("/me", authenticateToken, async (req: Request, res: Response): Promis
     let needsMigration = false;
     if (req.user.abstractWallet?.address) {
       const hasAbstractWalletInArray = req.user.wallets?.some(
-        w => w.address.toLowerCase() === req.user.abstractWallet?.address.toLowerCase() || w.id === 'abstract-wallet'
+        w => w.address.toLowerCase() === req.user!.abstractWallet?.address.toLowerCase() || w.id === 'abstract-wallet'
       );
 
       if (!hasAbstractWalletInArray) {

@@ -3,10 +3,7 @@ import { User, IUser, IWalletInfo } from '../models/User';
 import mongoose from 'mongoose';
 
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    [key: string]: any;
-  };
+  user?: IUser;
 }
 
 export class WalletController {
@@ -15,7 +12,7 @@ export class WalletController {
    */
   async getWallets(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       if (!userId) {
         return res.status(401).json({
           success: false,
@@ -77,7 +74,7 @@ export class WalletController {
    */
   async addWallet(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       if (!userId) {
         return res.status(401).json({
           success: false,
@@ -169,7 +166,7 @@ export class WalletController {
    */
   async setPrimaryWallet(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { walletId } = req.params;
 
       if (!userId) {
@@ -253,7 +250,7 @@ export class WalletController {
    */
   async updateWalletLabel(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { walletId } = req.params;
       const { label } = req.body;
 
@@ -334,7 +331,7 @@ export class WalletController {
    */
   async removeWallet(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { walletId } = req.params;
 
       if (!userId) {
@@ -408,7 +405,7 @@ export class WalletController {
    */
   async verifyWallet(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = req.user?._id;
       const { walletId } = req.params;
       const { signature, message } = req.body;
 
