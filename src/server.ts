@@ -16,7 +16,6 @@ import onboardingRoutes from "./routes/onboarding";
 import whitelistRoutes from "./routes/whitelist";
 import veriffRoutes from "./routes/veriff";
 
-
 class Server {
   private app: Application;
   private port: number;
@@ -45,7 +44,7 @@ class Server {
       })
     );
 
-    // CORS configuration - Allow all origins for now
+    // CORS configuration - Allow all origins for now and others
     this.app.use(
       cors({
         origin: true,
@@ -187,12 +186,12 @@ class Server {
             `🛠️  API Documentation: http://localhost:${this.port}/api`
           );
         }
-        
+
         logger.info("✅ Server startup completed successfully");
       });
 
-      this.server.on('error', (error: any) => {
-        logger.error('Server error:', error);
+      this.server.on("error", (error: any) => {
+        logger.error("Server error:", error);
       });
 
       // Add a small delay to see if something happens after startup
