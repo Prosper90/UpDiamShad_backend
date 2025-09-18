@@ -30,6 +30,11 @@ class Server {
   }
 
   private initializeMiddleware(): void {
+    // Trust proxy for rate limiting when behind reverse proxy (Digital Ocean)
+    if (process.env.NODE_ENV === 'production') {
+      this.app.set('trust proxy', true);
+    }
+
     // Security middleware
     this.app.use(
       helmet({

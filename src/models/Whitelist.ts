@@ -109,7 +109,7 @@ const WhitelistSchema = new Schema<IWhitelistEntry>({
 });
 
 // Indexes for better performance
-WhitelistSchema.index({ wallet_address: 1 });
+// Note: wallet_address already has unique index from schema definition
 WhitelistSchema.index({ email: 1 });
 WhitelistSchema.index({ status: 1 });
 WhitelistSchema.index({ submitted_at: -1 });
