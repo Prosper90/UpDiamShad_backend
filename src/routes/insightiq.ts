@@ -7,6 +7,7 @@ import {
   insightIQService,
   InsightIQAccount,
 } from "../services/insightiq.service";
+import { sparksService } from "../services/sparks.service";
 
 const router = Router();
 
@@ -180,6 +181,203 @@ router.post(
 );
 
 /**
+ * @route POST /insightiq/accounts/connect
+ * @desc Save connected account from Phyllo callback
+ * @access Private
+ */
+router.post(
+  "/accounts/connect",
+  authenticateToken,
+  [
+    body("accountId")
+      .isString()
+      .notEmpty()
+      .withMessage("Account ID is required"),
+    body("workplatformId")
+      .isString()
+      .notEmpty()
+      .withMessage("Work platform ID is required"),
+    body("userId")
+      .isString()
+      .notEmpty()
+      .withMessage("User ID is required"),
+  ],
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: errors.array(),
+        });
+        return;
+      }
+
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+
+      if (!req.user.insightIQ?.userId) {
+        res.status(400).json({
+          success: false,
+          message: "User does not have InsightIQ integration",
+        });
+        return;
+      }
+
+      const { accountId, workplatformId, userId } = req.body;
+
+      // Verify the userId matches the user's InsightIQ integration
+      if (userId !== req.user.insightIQ.userId) {
+        res.status(400).json({
+          success: false,
+          message: "User ID mismatch",
+        });
+        return;
+      }
+
+      // Get platform name dynamically from work-platforms API
+      let platform: string;
+      let workPlatformName: string;
+
+      try {
+        // First try to get work platform details
+        const workPlatformData = await insightIQService.getWorkPlatform(workplatformId);
+        workPlatformName = workPlatformData.name;
+
+        // Map platform names to our enum
+        const platformNameToEnumMap: Record<string, string> = {
+          "YouTube": "youtube",
+          "Instagram": "instagram",
+          "TikTok": "tiktok",
+          "Twitter": "twitter",
+          "Twitch": "twitch",
+          // Add more mappings as needed
+        };
+
+        platform = platformNameToEnumMap[workPlatformName];
+
+        if (!platform) {
+          logger.warn("Unknown platform name from InsightIQ:", {
+            workplatformId,
+            workPlatformName,
+            accountId,
+            userId: req.user._id,
+            message: "Please add this platform name to platformNameToEnumMap"
+          });
+
+          res.status(400).json({
+            success: false,
+            message: `Unsupported platform: ${workPlatformName}. Please contact support.`,
+            debug: process.env.NODE_ENV === "development" ? {
+              workplatformId,
+              workPlatformName,
+              suggestion: "Add this platform name to the enum mapping"
+            } : undefined
+          });
+          return;
+        }
+
+        logger.info("Platform resolved dynamically:", {
+          workplatformId,
+          workPlatformName,
+          platform,
+          accountId
+        });
+
+      } catch (error) {
+        logger.error("Failed to resolve work platform dynamically:", {
+          workplatformId,
+          accountId,
+          error: error instanceof Error ? error.message : error
+        });
+
+        res.status(500).json({
+          success: false,
+          message: "Failed to resolve platform information. Please try again.",
+          debug: process.env.NODE_ENV === "development" ? {
+            workplatformId,
+            error: error instanceof Error ? error.message : "Unknown error"
+          } : undefined
+        });
+        return;
+      }
+
+      // Check if account already exists
+      const existingAccountIndex = req.user.insightIQ.connectedAccounts.findIndex(
+        (account) => account.accountId === accountId
+      );
+
+      if (existingAccountIndex !== -1) {
+        // Update existing account
+        req.user.insightIQ.connectedAccounts[existingAccountIndex].isActive = true;
+        req.user.insightIQ.connectedAccounts[existingAccountIndex].connectedAt = new Date();
+        req.user.insightIQ.connectedAccounts[existingAccountIndex].lastSyncAt = new Date();
+      } else {
+        // Add new account with minimal data
+        const newAccount = {
+          accountId,
+          platform: platform as "youtube" | "tiktok" | "instagram" | "twitter" | "twitch",
+          username: "syncing...", // Temporary until we get real data
+          displayName: "Syncing account...", // Temporary until we get real data
+          profilePicture: undefined,
+          followerCount: 0,
+          isActive: true,
+          connectedAt: new Date(),
+          lastSyncAt: new Date(),
+        };
+
+        req.user.insightIQ.connectedAccounts.push(newAccount);
+      }
+
+      await req.user.save();
+
+      // Start background enrichment (don't await to return immediately)
+      insightIQService.enrichAccountData(req.user.insightIQ.userId, accountId)
+        .catch((error) => {
+          logger.warn("Background account enrichment failed (non-critical):", {
+            userId: req.user!._id,
+            accountId,
+            error: error.message,
+          });
+        });
+
+      logger.info("Account connected via Phyllo callback:", {
+        userId: req.user._id,
+        accountId,
+        platform,
+        workplatformId,
+        workPlatformName,
+        mappingMethod: "dynamic",
+      });
+
+      res.status(201).json({
+        success: true,
+        message: "Account connected successfully",
+        data: {
+          accountId,
+          platform,
+          status: "syncing",
+        },
+      });
+    } catch (error: any) {
+      logger.error("Failed to save connected account:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to save connected account",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
+  }
+);
+
+/**
  * @route GET /insightiq/accounts
  * @desc Get all connected social media accounts
  * @access Private
@@ -206,42 +404,39 @@ router.get(
         return;
       }
 
-      // Get connected accounts from InsightIQ
-      const accounts = await insightIQService.getConnectedAccounts(
-        req.user.insightIQ.userId
-      );
+      // For now, return local accounts since we don't have a bulk endpoint
+      // In the future, we could sync each account individually using the new API
+      const localAccounts = req.user.insightIQ.connectedAccounts;
 
-      // Update local database with latest account info
-      const updatedAccounts = accounts.map((account) => ({
-        accountId: account.account_id,
-        platform: account.platform as
-          | "youtube"
-          | "tiktok"
-          | "instagram"
-          | "twitter"
-          | "twitch",
-        username: account.username,
-        displayName: account.display_name,
-        profilePicture: account.profile_picture,
-        followerCount: account.follower_count || 0,
-        isActive: account.is_connected,
-        connectedAt: new Date(account.connected_at),
-        lastSyncAt: new Date(),
-      }));
+      // Optionally sync individual accounts in background (don't await)
+      // Only sync accounts that haven't been synced recently to avoid API rate limits
+      localAccounts.forEach(account => {
+        if (account.accountId && req.user?.insightIQ?.userId) {
+          const lastSync = account.lastSyncAt;
+          const shouldSync = !lastSync || (new Date().getTime() - new Date(lastSync).getTime()) > 5 * 60 * 1000; // 5 minutes
 
-      req.user.insightIQ.connectedAccounts = updatedAccounts;
-      await req.user.save();
+          if (shouldSync) {
+            insightIQService.enrichAccountData(req.user.insightIQ.userId, account.accountId)
+              .catch(error => {
+                logger.warn("Background sync failed for account (non-critical):", {
+                  accountId: account.accountId,
+                  error: error.message
+                });
+              });
+          }
+        }
+      });
 
       logger.info("Connected accounts retrieved", {
         userId: req.user._id,
-        accountCount: accounts.length,
+        accountCount: localAccounts.length,
       });
 
       res.json({
         success: true,
         data: {
-          connectedAccounts: updatedAccounts,
-          count: accounts.length,
+          connectedAccounts: localAccounts,
+          count: localAccounts.length,
         },
       });
     } catch (error: any) {
@@ -447,6 +642,168 @@ router.get(
         createdAt: integration?.createdAt,
       },
     });
+  }
+);
+
+/**
+ * @route POST /insightiq/calculate-sparks
+ * @desc Get platform metrics and calculate Sparks for all connected accounts
+ * @access Private
+ */
+router.post(
+  "/calculate-sparks",
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: "User not found",
+        });
+        return;
+      }
+
+      if (!req.user.insightIQ?.userId) {
+        res.status(400).json({
+          success: false,
+          message: "User does not have InsightIQ integration",
+        });
+        return;
+      }
+
+      const connectedAccounts = req.user.insightIQ.connectedAccounts.filter(
+        account => account.isActive
+      );
+
+      if (connectedAccounts.length === 0) {
+        res.status(400).json({
+          success: false,
+          message: "No connected accounts found",
+        });
+        return;
+      }
+
+      const platformResults = [];
+
+      // Get content metrics for each connected account
+      for (const account of connectedAccounts) {
+        try {
+          logger.info("Fetching content metrics for account:", {
+            accountId: account.accountId,
+            platform: account.platform,
+            username: account.username
+          });
+
+          // Get content data from InsightIQ
+          const contentResponse = await insightIQService.getContentMetrics(
+            account.accountId,
+            undefined, // fromDate - get recent content
+            100 // limit
+          );
+
+          if (contentResponse.data && contentResponse.data.length > 0) {
+            // Aggregate engagement metrics
+            const aggregatedMetrics = insightIQService.aggregateEngagementMetrics(
+              contentResponse.data
+            );
+
+            // Add follower count from account data
+            const platformMetrics = {
+              platform: account.platform,
+              totalLikes: aggregatedMetrics.totalLikes,
+              totalDislikes: aggregatedMetrics.totalDislikes,
+              totalComments: aggregatedMetrics.totalComments,
+              totalViews: aggregatedMetrics.totalViews,
+              totalShares: aggregatedMetrics.totalShares,
+              totalSaves: aggregatedMetrics.totalSaves,
+              totalWatchTime: aggregatedMetrics.totalWatchTime,
+              totalImpressions: aggregatedMetrics.totalImpressions,
+              totalReach: aggregatedMetrics.totalReach,
+              followerCount: account.followerCount || 0,
+            };
+
+            // Calculate Sparks for this platform
+            const sparksResult = sparksService.calculatePlatformSparks(platformMetrics);
+            platformResults.push(sparksResult);
+
+            logger.info("Platform Sparks calculated:", {
+              platform: account.platform,
+              totalSparks: sparksResult.totalSparks,
+              contentCount: contentResponse.data.length
+            });
+
+          } else {
+            logger.warn("No content data found for account:", {
+              accountId: account.accountId,
+              platform: account.platform
+            });
+
+            // Create minimal metrics with just follower count
+            const platformMetrics = {
+              platform: account.platform,
+              totalLikes: 0,
+              totalComments: 0,
+              totalViews: 0,
+              followerCount: account.followerCount || 0,
+            };
+
+            const sparksResult = sparksService.calculatePlatformSparks(platformMetrics);
+            platformResults.push(sparksResult);
+          }
+
+        } catch (accountError: any) {
+          logger.error("Failed to get metrics for account:", {
+            accountId: account.accountId,
+            platform: account.platform,
+            error: accountError.message
+          });
+
+          // Continue with other accounts even if one fails
+          continue;
+        }
+      }
+
+      if (platformResults.length === 0) {
+        res.status(500).json({
+          success: false,
+          message: "Failed to calculate Sparks for any connected accounts",
+        });
+        return;
+      }
+
+      // Calculate total Sparks across all platforms
+      const totalResult = sparksService.calculateTotalSparks(platformResults);
+
+      // Update user's Wavz profile with calculated Sparks
+      await sparksService.updateUserSparks(req.user._id.toString(), totalResult);
+
+      logger.info("Sparks calculation completed:", {
+        userId: req.user._id,
+        totalSparks: totalResult.totalSparks,
+        platformCount: platformResults.length,
+        platforms: platformResults.map(p => p.platform)
+      });
+
+      res.json({
+        success: true,
+        message: "Sparks calculated and updated successfully",
+        data: {
+          totalSparks: totalResult.totalSparks,
+          platformBreakdown: totalResult.platformBreakdown,
+          consolidatedMetrics: totalResult.consolidatedMetrics,
+          calculatedAt: new Date().toISOString(),
+        },
+      });
+
+    } catch (error: any) {
+      logger.error("Failed to calculate Sparks:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to calculate Sparks",
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
+    }
   }
 );
 

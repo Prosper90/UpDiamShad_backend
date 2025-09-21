@@ -31,31 +31,65 @@ export interface IAbstractWallet {
   createdAt: Date;
 }
 
-// Wavz System Interfaces
+// Wavz System Interfaces - All users are creators
 export interface IWavzProfile {
-  role: "creator" | "fan" | null; // User's primary role
+  role: "creator"; // All users are creators by default
   sparks: number; // cPoints (non-transferable reputation)
-  level: number; // Current level (1-5)
+  cPoints: number; // Cumulative weighting of sparks over time
+  level: number; // Current level (1-5) - Pulse → Resonance
   levelProgress: number; // Progress to next level (0-100%)
 
-  // Creator-specific data
-  creatorStats?: {
+  // Creator stats - now for all users
+  creatorStats: {
     totalPosts: number;
     totalViews: number;
     totalLikes: number;
     totalComments: number;
+    totalShares: number;
+    totalSaves: number; // Instagram/TikTok saves
+    totalWatchTime: number; // YouTube watch time in hours
     engagementRate: number;
-    fanCount: number;
+    followerCount: number; // Total across all platforms
     monthlyEarnings: number;
-  };
 
-  // Fan-specific data
-  fanStats?: {
-    creatorsSupported: number;
-    totalSpent: number;
-    nftsHeld: number;
-    stakingAmount: number;
-    supportLevel: "bronze" | "silver" | "gold" | "diamond";
+    // Platform-specific breakdowns
+    platformStats: {
+      youtube: {
+        likes: number;
+        dislikes: number;
+        comments: number;
+        views: number;
+        watchTime: number;
+        subscribers: number;
+      };
+      instagram: {
+        likes: number;
+        comments: number;
+        views: number;
+        saves: number;
+        shares: number;
+        followers: number;
+      };
+      twitter: {
+        likes: number;
+        retweets: number;
+        comments: number;
+        impressions: number;
+        followers: number;
+      };
+      tiktok: {
+        likes: number;
+        comments: number;
+        views: number;
+        shares: number;
+        followers: number;
+      };
+      spotify: {
+        streams: number;
+        playlists: number;
+        followers: number;
+      };
+    };
   };
 
   // Badges and achievements
@@ -231,14 +265,18 @@ const UserSchema: Schema<IUser> = new Schema(
       },
     ],
 
-    // Wavz Profile Schema
+    // Wavz Profile Schema - All users are creators
     wavzProfile: {
       role: {
         type: String,
-        enum: ["creator", "fan", null],
-        default: null,
+        enum: ["creator"],
+        default: "creator",
       },
       sparks: {
+        type: Number,
+        default: 0,
+      },
+      cPoints: {
         type: Number,
         default: 0,
       },
@@ -255,27 +293,56 @@ const UserSchema: Schema<IUser> = new Schema(
         max: 100,
       },
 
-      // Creator-specific stats
+      // Creator stats - now required for all users
       creatorStats: {
         totalPosts: { type: Number, default: 0 },
         totalViews: { type: Number, default: 0 },
         totalLikes: { type: Number, default: 0 },
         totalComments: { type: Number, default: 0 },
+        totalShares: { type: Number, default: 0 },
+        totalSaves: { type: Number, default: 0 },
+        totalWatchTime: { type: Number, default: 0 },
         engagementRate: { type: Number, default: 0 },
-        fanCount: { type: Number, default: 0 },
+        followerCount: { type: Number, default: 0 },
         monthlyEarnings: { type: Number, default: 0 },
-      },
 
-      // Fan-specific stats
-      fanStats: {
-        creatorsSupported: { type: Number, default: 0 },
-        totalSpent: { type: Number, default: 0 },
-        nftsHeld: { type: Number, default: 0 },
-        stakingAmount: { type: Number, default: 0 },
-        supportLevel: {
-          type: String,
-          enum: ["bronze", "silver", "gold", "diamond"],
-          default: "bronze",
+        // Platform-specific breakdowns
+        platformStats: {
+          youtube: {
+            likes: { type: Number, default: 0 },
+            dislikes: { type: Number, default: 0 },
+            comments: { type: Number, default: 0 },
+            views: { type: Number, default: 0 },
+            watchTime: { type: Number, default: 0 },
+            subscribers: { type: Number, default: 0 },
+          },
+          instagram: {
+            likes: { type: Number, default: 0 },
+            comments: { type: Number, default: 0 },
+            views: { type: Number, default: 0 },
+            saves: { type: Number, default: 0 },
+            shares: { type: Number, default: 0 },
+            followers: { type: Number, default: 0 },
+          },
+          twitter: {
+            likes: { type: Number, default: 0 },
+            retweets: { type: Number, default: 0 },
+            comments: { type: Number, default: 0 },
+            impressions: { type: Number, default: 0 },
+            followers: { type: Number, default: 0 },
+          },
+          tiktok: {
+            likes: { type: Number, default: 0 },
+            comments: { type: Number, default: 0 },
+            views: { type: Number, default: 0 },
+            shares: { type: Number, default: 0 },
+            followers: { type: Number, default: 0 },
+          },
+          spotify: {
+            streams: { type: Number, default: 0 },
+            playlists: { type: Number, default: 0 },
+            followers: { type: Number, default: 0 },
+          },
         },
       },
 

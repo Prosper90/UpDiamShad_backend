@@ -7,9 +7,63 @@ import { logger } from '../config/logger';
 const router = Router();
 
 /**
- * @route POST /onboarding/role
- * @desc Set user role (creator or fan) during onboarding
+ * @route POST /onboarding/complete
+ * @desc Complete onboarding - automatically assigns creator role (new Wavz system)
  * @access Private
+ */
+router.post(
+  '/complete',
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+        return;
+      }
+
+      // Everyone is a creator in the new Wavz system
+      req.user.wavzProfile.role = 'creator';
+      req.user.wavzProfile.isOnboarded = true;
+      req.user.wavzProfile.onboardedAt = new Date();
+      req.user.wavzProfile.lastActivityAt = new Date();
+
+      // Give starting Sparks for creators
+      req.user.wavzProfile.sparks = 100;
+
+      await req.user.save();
+
+      logger.info('User completed onboarding as creator', {
+        userId: req.user._id,
+        role: 'creator',
+        sparks: req.user.wavzProfile.sparks
+      });
+
+      res.json({
+        success: true,
+        message: 'Welcome to Diamondz as a creator!',
+        data: {
+          wavzProfile: req.user.wavzProfile
+        }
+      });
+    } catch (error: any) {
+      logger.error('Onboarding completion failed:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to complete onboarding',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+);
+
+/**
+ * @route POST /onboarding/role
+ * @desc Set user role (creator or fan) during onboarding - LEGACY ENDPOINT
+ * @access Private
+ * @deprecated Use /complete instead - all users are creators now
  */
 router.post(
   '/role',
@@ -37,26 +91,24 @@ router.post(
         return;
       }
 
-      const { role } = req.body;
+      // Legacy support - but now everyone becomes a creator
+      const role = 'creator'; // Force creator role regardless of input
 
-      // Update user's Wavz profile with role
+      // Update user's Wavz profile with creator role
       req.user.wavzProfile.role = role;
       req.user.wavzProfile.isOnboarded = true;
       req.user.wavzProfile.onboardedAt = new Date();
       req.user.wavzProfile.lastActivityAt = new Date();
 
-      // Give starting Sparks based on role
-      if (role === 'creator') {
-        req.user.wavzProfile.sparks = 100; // Starting bonus for creators
-      } else if (role === 'fan') {
-        req.user.wavzProfile.sparks = 50; // Starting bonus for fans
-      }
+      // Give starting Sparks for creators
+      req.user.wavzProfile.sparks = 100;
 
       await req.user.save();
 
-      logger.info('User completed onboarding', {
+      logger.info('User completed onboarding (legacy endpoint)', {
         userId: req.user._id,
-        role,
+        requestedRole: req.body.role,
+        assignedRole: role,
         sparks: req.user.wavzProfile.sparks
       });
 

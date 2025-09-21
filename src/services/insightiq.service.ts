@@ -324,6 +324,122 @@ class InsightIQService {
   }
 
   /**
+   * Get work platform details by work platform ID
+   */
+  async getWorkPlatform(workPlatformId: string): Promise<{name: string, category: string}> {
+    try {
+      const response = await this.apiClient.get(`/v1/work-platforms/${workPlatformId}`);
+
+      logger.info("Retrieved work platform details:", {
+        workPlatformId,
+        name: response.data.name
+      });
+
+      return {
+        name: response.data.name,
+        category: response.data.category
+      };
+    } catch (error: any) {
+      logger.error(
+        "Failed to get work platform details:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve work platform details");
+    }
+  }
+
+  /**
+   * Get account details by account ID
+   */
+  async getAccount(accountId: string): Promise<any> {
+    try {
+      const response = await this.apiClient.get(`/v1/accounts/${accountId}`);
+
+      logger.info("Retrieved account details:", {
+        accountId,
+        platform: response.data.work_platform?.name,
+        username: response.data.username
+      });
+
+      return response.data;
+    } catch (error: any) {
+      logger.error(
+        "Failed to get account details:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve account details");
+    }
+  }
+
+  /**
+   * Get content engagement metrics for a specific connected account
+   * This is the main method for Sparks calculation
+   */
+  async getContentMetrics(accountId: string, fromDate?: string, limit: number = 100): Promise<any> {
+    try {
+      const params: any = {
+        account_id: accountId,
+        limit: limit
+      };
+
+      if (fromDate) {
+        params.from_date = fromDate;
+      }
+
+      const response = await this.apiClient.get('/v1/social/contents', { params });
+
+      logger.info("Retrieved content metrics:", {
+        accountId,
+        contentCount: response.data.data?.length || 0,
+        fromDate,
+        platform: response.data.data?.[0]?.work_platform?.name || "unknown"
+      });
+
+      return response.data;
+    } catch (error: any) {
+      logger.error(
+        "Failed to get content metrics:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve content metrics");
+    }
+  }
+
+  /**
+   * Aggregate engagement metrics from content data for Sparks calculation
+   */
+  aggregateEngagementMetrics(contentData: any[]): any {
+    const aggregated = {
+      totalContent: contentData.length,
+      totalLikes: 0,
+      totalDislikes: 0,
+      totalComments: 0,
+      totalViews: 0,
+      totalShares: 0,
+      totalSaves: 0,
+      totalWatchTime: 0,
+      totalImpressions: 0,
+      totalReach: 0,
+      platform: contentData[0]?.work_platform?.name || "unknown"
+    };
+
+    contentData.forEach(content => {
+      const engagement = content.engagement || {};
+      aggregated.totalLikes += engagement.like_count || 0;
+      aggregated.totalDislikes += engagement.dislike_count || 0;
+      aggregated.totalComments += engagement.comment_count || 0;
+      aggregated.totalViews += engagement.view_count || 0;
+      aggregated.totalShares += engagement.share_count || 0;
+      aggregated.totalSaves += engagement.save_count || 0;
+      aggregated.totalWatchTime += engagement.watch_time_in_hours || 0;
+      aggregated.totalImpressions += engagement.impression_organic_count || 0;
+      aggregated.totalReach += engagement.reach_organic_count || 0;
+    });
+
+    return aggregated;
+  }
+
+  /**
    * Get user details from InsightIQ
    */
   async getUser(insightIqUserId: string): Promise<any> {
@@ -338,6 +454,79 @@ class InsightIQService {
         error.response?.data || error.message
       );
       throw new Error("Failed to retrieve user details");
+    }
+  }
+
+  /**
+   * Enrich account data by fetching detailed information from InsightIQ API
+   * This is called in the background after a Phyllo callback
+   */
+  async enrichAccountData(insightIqUserId: string, accountId: string): Promise<void> {
+    try {
+      logger.info("Starting account data enrichment:", { insightIqUserId, accountId });
+
+      // Get specific account details using the correct endpoint
+      let accountData;
+      try {
+        accountData = await this.getAccount(accountId);
+      } catch (apiError: any) {
+        logger.warn("Failed to fetch account details from InsightIQ API:", {
+          accountId,
+          error: apiError.message,
+          status: apiError.response?.status
+        });
+        // Don't throw - just skip enrichment if API is unavailable
+        return;
+      }
+
+      if (!accountData) {
+        logger.warn("Account not found in InsightIQ for enrichment:", { accountId });
+        return;
+      }
+
+      // Import User model here to avoid circular dependencies
+      const { User } = await import("../models/User");
+
+      // Find user and update account with enriched data
+      const user = await User.findOne({ "insightIQ.userId": insightIqUserId });
+      if (!user) {
+        logger.warn("User not found for account enrichment - may have been deleted:", { insightIqUserId });
+        return;
+      }
+
+      const accountIndex = user.insightIQ!.connectedAccounts.findIndex(
+        account => account.accountId === accountId
+      );
+
+      if (accountIndex === -1) {
+        logger.warn("Account not found in user's connected accounts - may have been removed:", { accountId });
+        return;
+      }
+
+      // Update with enriched data from InsightIQ
+      const account = user.insightIQ!.connectedAccounts[accountIndex];
+      account.username = accountData.username || accountData.platform_username || account.username;
+      account.displayName = accountData.platform_profile_name || account.displayName;
+      account.profilePicture = accountData.profile_pic_url;
+      // Note: follower count would need separate API call to get metrics
+      account.lastSyncAt = new Date();
+
+      await user.save();
+
+      logger.info("Account data enrichment completed:", {
+        accountId,
+        username: account.username,
+        displayName: account.displayName,
+        platform: accountData.work_platform?.name
+      });
+
+    } catch (error: any) {
+      logger.warn("Account data enrichment failed (non-critical):", {
+        insightIqUserId,
+        accountId,
+        error: error.message,
+      });
+      // Don't throw - this is background enrichment and shouldn't break main flow
     }
   }
 }
