@@ -98,48 +98,53 @@ class SparksService {
 
     // Calculate based on platform-specific rates
     if (platform === 'youtube') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.dislikes = (metrics.totalDislikes || 0) * rates.dislike;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.watchTime = (metrics.totalWatchTime || 0) * rates.watchHour;
-      breakdown.followers = (metrics.followerCount || 0) * rates.subscriber;
+      const youtubeRates = rates as typeof SPARKS_RATES.youtube;
+      breakdown.likes = (metrics.totalLikes || 0) * youtubeRates.like;
+      breakdown.dislikes = (metrics.totalDislikes || 0) * youtubeRates.dislike;
+      breakdown.comments = (metrics.totalComments || 0) * youtubeRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * youtubeRates.view;
+      breakdown.watchTime = (metrics.totalWatchTime || 0) * youtubeRates.watchHour;
+      breakdown.followers = (metrics.followerCount || 0) * youtubeRates.subscriber;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = breakdown.likes + breakdown.dislikes + breakdown.comments + breakdown.views + breakdown.watchTime + breakdown.followers;
     }
     else if (platform === 'instagram') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.saves = (metrics.totalSaves || 0) * rates.save;
-      breakdown.shares = (metrics.totalShares || 0) * rates.share;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const instagramRates = rates as typeof SPARKS_RATES.instagram;
+      breakdown.likes = (metrics.totalLikes || 0) * instagramRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * instagramRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * instagramRates.view;
+      breakdown.saves = (metrics.totalSaves || 0) * instagramRates.save;
+      breakdown.shares = (metrics.totalShares || 0) * instagramRates.share;
+      breakdown.followers = (metrics.followerCount || 0) * instagramRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = breakdown.likes + breakdown.comments + breakdown.views + breakdown.saves + breakdown.shares + breakdown.followers;
     }
     else if (platform === 'twitter') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.shares = (metrics.totalShares || 0) * rates.retweet; // retweets
-      breakdown.impressions = (metrics.totalImpressions || 0) * rates.impression;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const twitterRates = rates as typeof SPARKS_RATES.twitter;
+      breakdown.likes = (metrics.totalLikes || 0) * twitterRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * twitterRates.comment;
+      breakdown.shares = (metrics.totalShares || 0) * twitterRates.retweet; // retweets
+      breakdown.impressions = (metrics.totalImpressions || 0) * twitterRates.impression;
+      breakdown.followers = (metrics.followerCount || 0) * twitterRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = breakdown.likes + breakdown.comments + breakdown.shares + breakdown.impressions + breakdown.followers;
     }
     else if (platform === 'tiktok') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.shares = (metrics.totalShares || 0) * rates.share;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const tiktokRates = rates as typeof SPARKS_RATES.tiktok;
+      breakdown.likes = (metrics.totalLikes || 0) * tiktokRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * tiktokRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * tiktokRates.view;
+      breakdown.shares = (metrics.totalShares || 0) * tiktokRates.share;
+      breakdown.followers = (metrics.followerCount || 0) * tiktokRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = breakdown.likes + breakdown.comments + breakdown.views + breakdown.shares + breakdown.followers;
     }
     else if (platform === 'spotify') {
-      breakdown.views = (metrics.totalViews || 0) * rates.stream; // streams as views
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const spotifyRates = rates as typeof SPARKS_RATES.spotify;
+      breakdown.views = (metrics.totalViews || 0) * spotifyRates.stream; // streams as views
+      breakdown.followers = (metrics.followerCount || 0) * spotifyRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = breakdown.views + breakdown.followers;
     }
 
     logger.info("Calculated platform Sparks:", {
