@@ -374,6 +374,7 @@ class InsightIQService {
   /**
    * Get content engagement metrics for a specific connected account
    * This is the main method for Sparks calculation
+   * Now uses profile endpoint for better engagement data
    */
   async getContentMetrics(accountId: string, fromDate?: string, limit: number = 100): Promise<any> {
     try {
@@ -386,11 +387,12 @@ class InsightIQService {
         params.from_date = fromDate;
       }
 
-      const response = await this.apiClient.get('/v1/social/contents', { params });
+      // Switch to profile endpoint for better engagement data
+      const response = await this.apiClient.get('/v1/profiles', { params });
 
-      logger.info("Retrieved content metrics:", {
+      logger.info("Retrieved profile engagement data:", {
         accountId,
-        contentCount: response.data.data?.length || 0,
+        profileCount: response.data.data?.length || 0,
         fromDate,
         platform: response.data.data?.[0]?.work_platform?.name || "unknown"
       });
@@ -398,10 +400,10 @@ class InsightIQService {
       return response.data;
     } catch (error: any) {
       logger.error(
-        "Failed to get content metrics:",
+        "Failed to get profile engagement data:",
         error.response?.data || error.message
       );
-      throw new Error("Failed to retrieve content metrics");
+      throw new Error("Failed to retrieve profile engagement data");
     }
   }
 

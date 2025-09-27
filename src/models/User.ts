@@ -108,6 +108,18 @@ export interface IWavzProfile {
     proofOfSupport: number; // PoS count
   };
 
+  // Beat-related stats (CORRECTED FLOW: Raw Engagement → cPoints → Sparks → Beats)
+  totalBeats: number; // Count of individual creative contributions (Beats)
+  beatsValue: number; // Total value accumulated from all Beats
+  beatStats: {
+    totalBeats: number; // Total number of Beats created
+    averageBeatValue: number; // Average value per Beat
+    bestPerformingBeat: string; // Beat ID of best performing Beat
+    monthlyBeats: number; // Beats created this month
+    lastBeatCreated: Date | null; // When last Beat was created
+    trendingBeats: number; // Count of currently trending Beats
+  };
+
   isOnboarded: boolean; // Has completed onboarding flow
   onboardedAt?: Date;
   lastActivityAt: Date;
@@ -360,6 +372,18 @@ const UserSchema: Schema<IUser> = new Schema(
         proofOfHold: { type: Number, default: 0 },
         proofOfUse: { type: Number, default: 0 },
         proofOfSupport: { type: Number, default: 0 },
+      },
+
+      // Beat-related stats (CORRECTED FLOW: Raw Engagement → cPoints → Sparks → Beats)
+      totalBeats: { type: Number, default: 0 }, // Count of individual creative contributions (Beats)
+      beatsValue: { type: Number, default: 0 }, // Total value accumulated from all Beats
+      beatStats: {
+        totalBeats: { type: Number, default: 0 }, // Total number of Beats created
+        averageBeatValue: { type: Number, default: 0 }, // Average value per Beat
+        bestPerformingBeat: { type: String, default: "" }, // Beat ID of best performing Beat
+        monthlyBeats: { type: Number, default: 0 }, // Beats created this month
+        lastBeatCreated: { type: Date, default: null }, // When last Beat was created
+        trendingBeats: { type: Number, default: 0 }, // Count of currently trending Beats
       },
 
       isOnboarded: {
