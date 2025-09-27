@@ -1,0 +1,1299 @@
+**------- API References --------**
+Export
+v1.0
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Contact InsightIQ
+
+The InsightIQ API is built on RESTful principles. It returns JSON encoded responses and accepts JSON payloads on HTTPS connections to ensure secure data transmission. The APIs must be called only from your server and never from your app or frontend to prevent security vulnerabilities.
+
+The API operates in three environments: sandbox, staging and production.
+
+The sandbox environment returns mock data and is used for testing the basic functionality of the system.
+The staging environment is exactly like a production environment but with certain limitations. It is used for your internal testing and development purposes.
+The production environment connects to real platform accounts and all data reads and writes are made to live accounts. This is what you would use to get data for your customers.
+
+
+
+**-------- Connect ----------**
+
+1 Retrieve a work platform
+get
+https://api.sandbox.insightiq.ai/v1/work-platforms/{id}
+Retrieve the details of a specific Work Platform by its unique identifier.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Path Parameters
+id
+string<uuid>
+required
+Unique identifier for the work platform.
+
+Example:
+179a0bb4-c572-4477-9457-7dacf1b84848
+Responses
+200
+Returns the Work Platform object.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+Work Platform refers to the Creator's platform e.g. Instagram, YouTube, Patreon, etc.
+
+id
+string<uuid>
+required
+Unique identifier for the work platform.
+
+Example:
+179a0bb4-c572-4477-9457-7dacf1b84848
+name
+string
+required
+Name of the work platform
+
+Example:
+Instagram
+logo_url
+string<uri>
+required
+Image URL for the work platform logo.
+
+Example:
+https://insightiq.ai/storage/instagram.png
+created_at
+string<date-time>
+required
+Object creation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+updated_at
+string<date-time>
+required
+Object updation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+category
+string
+required
+Category of the work platform.
+
+Allowed values:
+MEDIA
+EDUCATION
+SOCIAL
+ENTERTAINMENT
+LIFESTYLE
+BUSINESS
+Example:
+MEDIA
+status
+string
+required
+Current status of the work platform.
+
+Allowed values:
+ACTIVE
+INACTIVE
+Example:
+ACTIVE
+url
+string<uri>
+required
+URL of the work platform.
+
+Example:
+https://www.instagram.com
+products
+object
+required
+identity
+object
+required
+engagement
+object
+required
+income
+object
+required
+switch
+object
+required
+activity
+object
+required
+publish
+object
+required
+
+# Sample Test/Show # 
+
+Username
+:
+username
+Password
+:
+password
+id*
+:
+string
+Send API Request
+
+Staging
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/work-platforms/{id}',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+  "name": "Instagram",
+  "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png",
+  "created_at": "2021-11-08T18:21:59.819244",
+  "updated_at": "2021-11-08T18:21:59.819244",
+  "category": "SOCIAL",
+  "status": "ACTIVE",
+  "url": "https://www.instagram.com/",
+  "products": {
+    "identity": {
+      "is_supported": true,
+      "audience": {
+        "is_supported": true
+      }
+    },
+    "engagement": {
+      "is_supported": true,
+      "audience": {
+        "is_supported": true
+      }
+    },
+    "income": {
+      "is_supported": false
+    },
+    "activity": {
+      "is_supported": false
+    },
+    "publish": {
+      "is_supported": false
+    },
+    "switch": {
+      "is_supported": false
+    }
+  }
+}
+
+
+
+
+2 
+Retrieve all work platforms
+get
+https://api.staging.insightiq.ai/v1/work-platforms
+Lists all Work Platforms.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Query Parameters
+limit
+integer
+The number of objects to be returned. It can be between 1 to 100. The default value is 10.
+
+>= 1
+<= 100
+Default:
+10
+name
+string
+Only return objects with the name provided.
+
+Example:
+name
+offset
+integer
+The number of objects to skip. Use this argument for pagination. The default value is 0.
+
+>= 0
+Default:
+0
+Responses
+200
+Returns all Work Platforms objects.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+data
+array[WorkPlatform]
+Work Platform refers to the Creator's platform e.g. Instagram, YouTube, Patreon, etc.
+
+id
+string<uuid>
+required
+Unique identifier for the work platform.
+
+Example:
+179a0bb4-c572-4477-9457-7dacf1b84848
+name
+string
+required
+Name of the work platform
+
+Example:
+Instagram
+logo_url
+string<uri>
+required
+Image URL for the work platform logo.
+
+Example:
+https://insightiq.ai/storage/instagram.png
+created_at
+string<date-time>
+required
+Object creation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+updated_at
+string<date-time>
+required
+Object updation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+category
+string
+required
+Category of the work platform.
+
+Allowed values:
+MEDIA
+EDUCATION
+SOCIAL
+ENTERTAINMENT
+LIFESTYLE
+BUSINESS
+Example:
+MEDIA
+status
+string
+required
+Current status of the work platform.
+
+Allowed values:
+ACTIVE
+INACTIVE
+Example:
+ACTIVE
+url
+string<uri>
+required
+URL of the work platform.
+
+Example:
+https://www.instagram.com
+products
+object
+required
+metadata
+Metadata
+Metadata object representing meta information about resources.
+
+offset
+integer
+required
+Offset value passed in the query parameter.
+
+Default:
+0
+Example:
+0
+limit
+integer
+required
+Limit value passed in the query parameter.
+
+Default:
+10
+Example:
+10
+from_date
+string<date> or null
+From date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2020-12-31
+to_date
+string<date> or null
+To date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2021-12-31
+
+
+# Sample Test/Show # 
+
+
+Username
+:
+username
+Password
+:
+password
+limit
+:
+defaults to: 10
+name
+:
+string
+offset
+:
+defaults to: 0
+Send API Request
+
+Staging
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/work-platforms',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "data": [
+    {
+      "id": "3f996edf-fec1-4be7-bb53-f9b649f41058",
+      "name": "Discord",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_discord.png",
+      "created_at": "2022-03-04T10:06:41.871329",
+      "updated_at": "2022-03-04T10:06:41.871329",
+      "category": "ENTERTAINMENT",
+      "status": "ACTIVE",
+      "url": "https://discord.com/",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "9c5b1cf1-23f1-4d40-b0ea-40f9bf615801",
+      "name": "Pinterest",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_pinterest.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "LIFESTYLE",
+      "status": "ACTIVE",
+      "url": "https://www.pinterest.com",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "fbf76083-710b-439a-8b8c-956f607ef2c1",
+      "name": "Substack",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_substack.png",
+      "created_at": "2022-03-04T10:06:41.871329",
+      "updated_at": "2022-03-04T10:06:41.871329",
+      "category": "SOCIAL",
+      "status": "ACTIVE",
+      "url": "https://substack.com/",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+      "name": "Instagram",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "SOCIAL",
+      "status": "ACTIVE",
+      "url": "https://www.instagram.com/",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": true
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": true
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "ad2fec62-2987-40a0-89fb-23485972598c",
+      "name": "Facebook",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_facebook.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "SOCIAL",
+      "status": "ACTIVE",
+      "url": "https://www.facebook.com",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "de55aeec-0dc8-4119-bf90-16b3d1f0c987",
+      "name": "TikTok",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_tiktok.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "SOCIAL",
+      "status": "ACTIVE",
+      "url": "https://www.tiktok.com",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "e4de6c01-5b78-4fc0-a651-24f44134457b",
+      "name": "Twitch",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitch.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "ENTERTAINMENT",
+      "status": "ACTIVE",
+      "url": "https://www.twitch.tv",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+      "name": "Twitter",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitter.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "SOCIAL",
+      "status": "ACTIVE",
+      "url": "https://twitter.com",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": false
+          }
+        },
+        "income": {
+          "is_supported": false
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    },
+    {
+      "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+      "name": "YouTube",
+      "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png",
+      "created_at": "2021-11-08T18:21:59.819244",
+      "updated_at": "2021-11-08T18:21:59.819244",
+      "category": "ENTERTAINMENT",
+      "status": "ACTIVE",
+      "url": "https://www.youtube.com/",
+      "products": {
+        "identity": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": true
+          }
+        },
+        "engagement": {
+          "is_supported": true,
+          "audience": {
+            "is_supported": true
+          }
+        },
+        "income": {
+          "is_supported": true
+        },
+        "switch": {
+          "is_supported": false
+        },
+        "activity": {
+          "is_supported": false
+        },
+        "publish": {
+          "is_supported": false
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "offset": 0,
+    "limit": 10,
+    "from_date": null,
+    "to_date": null
+  }
+}
+
+
+3 Retrieve a user
+get
+https://api.staging.insightiq.ai/v1/users/{id}
+Retrieve the information of the User with the supplied User id.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Path Parameters
+id
+string
+required
+Unique identifier for the user.
+
+Responses
+200
+Returns the User object.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+User objects represent distinct users that have connected their work platform via Connect.
+
+name
+string
+required
+Name of the user.
+
+Example:
+John Doe
+external_id
+string
+required
+External ID of the user as supplied by you.
+
+Example:
+179a0bb4-c572-4477-9457-7dacf1b84848
+id
+string<uuid>
+required
+Unique ID of the user.
+
+Example:
+0994b847-cc69-4d98-bc99-c5e65e762add
+created_at
+string<date-time>
+required
+User creation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:34:56.534978
+updated_at
+string<date-time>
+required
+User updation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+status
+string
+required
+User status on .
+
+Allowed values:
+ACTIVE
+INACTIVE
+Example:
+ACTIVE
+
+# Sample Test/Show # 
+
+Username
+:
+username
+Password
+:
+password
+id*
+:
+string
+Send API Request
+
+Staging
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/users/{id}',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+{
+  "name": "Mark Ruffalo",
+  "external_id": "154813a5-d26e-42f2-8b1d-ebbed59b062d",
+  "id": "b0562ead-6282-404f-9e63-9da7bc0f838f",
+  "created_at": "2021-12-13T07:54:41.078254",
+  "updated_at": "2021-12-13T07:54:41.078254",
+  "status": "ACTIVE"
+}
+
+
+4 Retrieve all users
+get
+https://api.staging.insightiq.ai/v1/users
+Lists all Users.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Query Parameters
+limit
+integer
+The number of objects to be returned. It can be between 1 to 100. The default value is 10.
+
+>= 1
+<= 100
+Default:
+10
+offset
+integer
+The number of objects to skip. Use this argument for pagination. The default value is 0.
+
+>= 0
+Default:
+0
+Responses
+200
+An object with a results property that contains an array of up to limit user objects.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+data
+array[User]
+User objects represent distinct users that have connected their work platform via Connect.
+
+name
+string
+required
+Name of the user.
+
+Example:
+John Doe
+external_id
+string
+required
+External ID of the user as supplied by you.
+
+Example:
+179a0bb4-c572-4477-9457-7dacf1b84848
+id
+string<uuid>
+required
+Unique ID of the user.
+
+Example:
+0994b847-cc69-4d98-bc99-c5e65e762add
+created_at
+string<date-time>
+required
+User creation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:34:56.534978
+updated_at
+string<date-time>
+required
+User updation timestamp (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+status
+string
+required
+User status on .
+
+Allowed values:
+ACTIVE
+INACTIVE
+Example:
+ACTIVE
+metadata
+Metadata
+Metadata object representing meta information about resources.
+
+offset
+integer
+required
+Offset value passed in the query parameter.
+
+Default:
+0
+Example:
+0
+limit
+integer
+required
+Limit value passed in the query parameter.
+
+Default:
+10
+Example:
+10
+from_date
+string<date> or null
+From date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2020-12-31
+to_date
+string<date> or null
+To date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2021-12-31
+
+# Sample Test/Show # 
+
+Username
+:
+username
+Password
+:
+password
+limit
+:
+defaults to: 10
+offset
+:
+defaults to: 0
+Send API Request
+
+Staging
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/users',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "data": [
+    {
+      "name": "Arvind",
+      "external_id": "c8b24285-e576-4c7a-9196-26c0c401afe83",
+      "id": "779acd71-23f7-4006-9db2-e9642038c3a7",
+      "created_at": "2022-03-29T16:16:39.482688",
+      "updated_at": "2022-03-29T16:16:39.482688",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "test01",
+      "external_id": "c8b24285-e576-4c7a-9196-26c0c401afe445",
+      "id": "ac9e92f4-1f26-4688-94b5-478f429126c4",
+      "created_at": "2022-03-29T16:01:47.473103",
+      "updated_at": "2022-03-29T16:01:47.473103",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Arvind",
+      "external_id": "c8b24285-e576-4c7a-9196-26c0c401afe82",
+      "id": "6cb1e144-b709-4e36-8878-fe66c8125c60",
+      "created_at": "2022-03-29T16:01:10.507657",
+      "updated_at": "2022-03-29T16:01:10.507657",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Peter Parker",
+      "external_id": "c8b24285-e576-4c7a-9196-26c0c401afe81",
+      "id": "9546b4fe-cef7-48c4-ab9f-960dd0080728",
+      "created_at": "2022-03-17T05:47:39.199440",
+      "updated_at": "2022-03-17T05:47:39.199440",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "LedAU1GL",
+      "external_id": "YET4z78Goe0fPnY7guGF",
+      "id": "a162c7e0-bc81-4142-8945-3d6a715d0f51",
+      "created_at": "2022-01-06T08:34:39.926237",
+      "updated_at": "2022-01-06T08:34:39.926237",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "5zS70mBZ",
+      "external_id": "B35UtSEwH06X4G7Oj904",
+      "id": "9c03319a-ddde-443c-8439-b8f380e9a365",
+      "created_at": "2022-01-03T10:07:54.077177",
+      "updated_at": "2022-01-03T10:07:54.077177",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "GQe38pJo",
+      "external_id": "3K64ZAT9WGl6T6SJl0Gm",
+      "id": "b4660c4f-5b6d-4ddd-b0ed-832af3a3e153",
+      "created_at": "2022-01-03T10:07:32.805577",
+      "updated_at": "2022-01-03T10:07:32.805577",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "y0hHz1uG",
+      "external_id": "puxaa648u5Fy7VPikXnr",
+      "id": "4e16b577-c019-4538-ba25-4ef45b38b141",
+      "created_at": "2022-01-03T10:01:17.679508",
+      "updated_at": "2022-01-03T10:01:17.679508",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "DigiQT",
+      "external_id": "1640699990331",
+      "id": "b1eacf57-f6b9-478c-a352-fe94974f8691",
+      "created_at": "2021-12-28T13:59:50.611550",
+      "updated_at": "2021-12-28T13:59:50.611550",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "DigiQT",
+      "external_id": "1640699946482",
+      "id": "e85f084d-64c7-4271-9b42-ecef8e397b99",
+      "created_at": "2021-12-28T13:59:07.821132",
+      "updated_at": "2021-12-28T13:59:07.821132",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "h51u3qsm",
+      "external_id": "qLSq6eTyfSJvkZ4GD5Rk",
+      "id": "b20ac291-2a1b-49bc-b27a-fdc2d0e789d4",
+      "created_at": "2021-12-14T05:48:13.354451",
+      "updated_at": "2021-12-14T05:48:13.354451",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "4hbknpdk",
+      "external_id": "AMqGf3gftYw5LIZsLMY7",
+      "id": "7d28634e-bcc3-4616-b980-9b9c5a73d519",
+      "created_at": "2021-12-14T05:46:00.780360",
+      "updated_at": "2021-12-14T05:46:00.780360",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "6Mwkkfo0",
+      "external_id": "F23wSDSgoMTdRQrFndH5",
+      "id": "df2c6435-6eb3-471a-a1fa-6bb1b21e9e0b",
+      "created_at": "2021-12-14T05:45:44.419308",
+      "updated_at": "2021-12-14T05:45:44.419308",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "faDzxZG2",
+      "external_id": "kJ7LkWlvX4FjqOXwe0L7",
+      "id": "a066e220-d99c-4737-a763-888271faeb99",
+      "created_at": "2021-12-14T05:45:37.711996",
+      "updated_at": "2021-12-14T05:45:37.711996",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Kgga4vQX",
+      "external_id": "nZl1fhjUKcvnZ0zjxRyY",
+      "id": "63ea679d-b421-4de6-91db-94ea4bd78816",
+      "created_at": "2021-12-14T05:43:07.287532",
+      "updated_at": "2021-12-14T05:43:07.287532",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "LztHEgLI",
+      "external_id": "uHuW9HCUKg1YH56u3PjP",
+      "id": "4532e289-6301-4cdf-af6b-aef83ab01315",
+      "created_at": "2021-12-13T14:14:49.663789",
+      "updated_at": "2021-12-13T14:14:49.663789",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Chad Becker",
+      "external_id": "aaf8a927-d478-4e98-8ade-6ca5ff244877",
+      "id": "c931d928-c17d-49ee-89d0-ab18a825bd9b",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Simu Liu",
+      "external_id": "2cf983a9-9db2-4b35-b3f5-2908be48cfd4",
+      "id": "dbada397-ed37-48e5-98bf-018808a186d9",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Justin Gatlin",
+      "external_id": "488a0a12-3bd4-4e40-b6e2-0dbf4895e6af",
+      "id": "bc200267-631f-42e2-b0d9-aae786ff85de",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Lisa Kudrow",
+      "external_id": "4a39a4af-fa93-4c80-a1f7-b0f73df70f4e",
+      "id": "c21c3a73-ade9-435b-8033-53d3e0549366",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Jerry Seinfeld",
+      "external_id": "82a356fc-574f-4065-91e8-b35e8717f596",
+      "id": "c9342ccd-14ec-4fb1-b6c1-8dfc5df7c518",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Sam Curran",
+      "external_id": "519f061f-30df-4d25-872d-e8732023d017",
+      "id": "79be6897-e0f4-43d2-8df3-4af15b2862f0",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Jonah Hill",
+      "external_id": "1c82c935-edb2-4419-96b6-2ca6be72c207",
+      "id": "3b38559b-892f-475d-b4df-7248ef1fd405",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Mark Ruffalo",
+      "external_id": "154813a5-d26e-42f2-8b1d-ebbed59b062d",
+      "id": "b0562ead-6282-404f-9e63-9da7bc0f838f",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Robert Downey",
+      "external_id": "370a5ab7-42b6-4871-95fb-ee7a17c91dc8",
+      "id": "28722faa-5356-483d-a57b-384fa01859dd",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Peter Parker",
+      "external_id": "5a3ab477-1be8-4b37-9e61-a51174c40d09",
+      "id": "8ba1ac32-0f3c-4cf0-8d89-79a183258f6a",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Chris Evans",
+      "external_id": "2fbada02-9da0-41e7-b1e5-042ee71874e4",
+      "id": "ac0d5da5-f8c1-4139-8945-825986da9c1e",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    },
+    {
+      "name": "Julia Luis",
+      "external_id": "bae59952-7e03-47bd-9561-5c4d5453bdd9",
+      "id": "4d913581-99f2-41a8-9309-9b008511c211",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "status": "ACTIVE"
+    }
+  ],
+  "metadata": {
+    "offset": 0,
+    "limit": 100,
+    "from_date": null,
+    "to_date": null
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,271 @@
+
+
+10  Retrieve content group items in bulk
+post
+https://api.staging.insightiq.ai/v1/social/content-groups/search
+Search content group items in bulk by providing the IDs.
+
+This is best used in combination with webhooks - you can directly take the IDs from "CONTENT-GROUPS.ADDED" and "CONTENT-GROUPS.UPDATED" webhook notifications and pass on to this API to get the updated content group items.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Body
+application/jsonapplication/xml
+
+application/json
+ids
+array[string<uuid>]
+required
+List of upto 100 content group IDs for which to fetch data
+
+>= 1 items
+<= 100 items
+Responses
+200
+Returns all content group objects matching the IDs.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+data
+array[ContentGroup]
+Represents the Content Group object. For Instagram, YouTube types of platforms, it will media containers (album, playlist) created/published on that platforms.
+
+id
+string<uuid>
+required
+Unique ID of the content group.
+
+Example:
+cfcc6603-1d8f-47d9-926a-4b91cc143105
+created_at
+string<date-time>
+required
+Object creation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+updated_at
+string<date-time>
+required
+Object updation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+user
+UserAttribute
+account
+AccountAttribute
+work_platform
+WorkPlatformAttribute
+engagement
+object
+Object having reputation information.
+
+external_id
+string
+required
+Unique content group ID on the platform.
+
+Example:
+fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb
+title
+string
+required
+Title of the content group.
+
+Example:
+USA Tours
+format
+string
+Media type of the content item.
+
+Allowed values:
+VIDEO
+IMAGE
+AUDIO
+TEXT
+COLLECTION
+OTHER
+Example:
+VIDEO
+type
+string
+required
+Platform specific content type.
+
+Allowed values:
+ALBUM
+PLAYLIST
+OTHER
+Example:
+ALBUM
+url
+string<uri>
+Platform content group URL. Ex - for YouTube, it will the playlist URL.
+
+Example:
+https://youtu.be/jzWweY4xPe8
+description
+string or null
+Description of the content group.
+
+Example:
+US tours video.
+visibility
+string
+Visibility of the content group.
+
+Allowed values:
+PUBLIC
+PRIVATE
+Example:
+PUBLIC
+thumbnail_url
+string<uri>
+Thumbnail URL of the content group, which can be used to download the media thumbnail. This is usually a signed URL and may have certain expiry limits so we recommend using it for downloads as soon as possible (such as when a webhook is received), if you are looking to cache thumbnails with you.
+
+Example:
+https://youtu.be/jzWweY4xPe8.png
+published_at
+string<date-time>
+required
+Publishing timestamp of the content group.
+
+Example:
+2021-05-26T00:00:00.000000
+platform_profile_id
+string or null
+required
+Unique profile ID of the user on the work platform.Show all...
+
+Example:
+UCEyLTzBtHJhlUwkeWhxfMXw
+platform_profile_name
+string or null
+required
+User's profile name on the work platform. This is not unique, is displayed prominently on the profile, usually editable and is most commonly associated with that user's identity on the platform.Show all...
+
+Example:
+CBSE WINNERS
+item_count
+integer
+required
+Number of content items in this content group.
+
+media_url
+string or null
+Direct media URL of the first content item in the content group, which can be used to download the media item. This is usually a signed URL and may have certain expiry limits so we recommend using it for downloads as soon as possible (such as when a webhook is received), if you are looking to cache media files with you.
+
+media_urls
+array[string<uri>] or null
+Direct media URL of all the content items in the content group, which can be used to download the media item. This is usually a signed URL and may have certain expiry limits so we recommend using it for downloads as soon as possible (such as when a webhook is received), if you are looking to cache media files with you.
+
+
+
+# Sample Test/Show # 
+
+
+Username
+:
+username
+Password
+:
+password
+{
+  "ids": [
+    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+  ]
+}
+{
+  "ids": [
+    "497f6eca-6276-4993-bfeb-53cbbbba6f08"
+  ]
+}
+Send API Request
+
+Staging
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'POST',
+  url: 'https://api.staging.insightiq.ai/v1/social/content-groups/search',
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    Authorization: 'Basic 123'
+  },
+  data: {ids: ['497f6eca-6276-4993-bfeb-53cbbbba6f08']}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "data": [
+    {
+      "id": "cfcc6603-1d8f-47d9-926a-4b91cc143105",
+      "created_at": "2020-03-27T12:56:34.534978",
+      "updated_at": "2020-03-27T12:56:34.534978",
+      "user": {
+        "id": "fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb",
+        "name": "John Doe"
+      },
+      "account": {
+        "id": "fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb",
+        "platform_username": "john.doe@gmail.com"
+      },
+      "work_platform": {
+        "id": "fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb",
+        "name": "Instagram",
+        "logo_url": "https://insightiq.ai/storage/instagram.png"
+      },
+      "engagement": {
+        "like_count": 3455,
+        "dislike_count": 52,
+        "comment_count": 53,
+        "impression_organic_count": 545,
+        "reach_organic_count": 453,
+        "save_count": 5423,
+        "view_count": 345,
+        "watch_time_in_hours": 1.5,
+        "share_count": 5423,
+        "impression_paid_count": 545,
+        "reach_paid_count": 453
+      },
+      "external_id": "fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb",
+      "title": "USA Tours",
+      "format": "VIDEO",
+      "type": "ALBUM",
+      "url": "https://youtu.be/jzWweY4xPe8",
+      "description": "US tours video.",
+      "visibility": "PUBLIC",
+      "thumbnail_url": "https://youtu.be/jzWweY4xPe8.png",
+      "published_at": "2021-05-26T00:00:00",
+      "platform_profile_id": "UCEyLTzBtHJhlUwkeWhxfMXw",
+      "platform_profile_name": "CBSE WINNERS",
+      "item_count": 0
+    }
+  ]
+}

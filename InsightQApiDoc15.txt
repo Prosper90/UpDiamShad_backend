@@ -1,0 +1,478 @@
+
+
+11  
+Retrieve a publication content item
+get
+https://api.staging.insightiq.ai/v1/publications/contents/{id}
+Retrieve the engagement information of the newsletter publication with the supplied content id.
+
+Usually used in conjunction with the "CONTENTS.*" webhooks, read more.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Path Parameters
+id
+string
+required
+Unique identifier for the content
+
+Responses
+200
+Returns Content object.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+Represents the Content object. It contains data of media (images, videos, audio) present in a connected account.
+
+id
+string<uuid>
+required
+Unique ID of the content item.
+
+Example:
+cfcc6603-1d8f-47d9-926a-4b91cc143105
+created_at
+string<date-time>
+required
+Object creation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+updated_at
+string<date-time>
+required
+Object updation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+user
+UserAttribute
+id
+string<uuid>
+required
+Unique ID of the user.
+
+Example:
+fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb
+name
+string
+required
+Name of the user.
+
+Example:
+John Doe
+account
+AccountAttribute
+id
+string<uuid>
+required
+Unique ID of the account linked to this object.
+
+Example:
+fb83e3ca-eae7-4eaa-bf51-601ea4b3daeb
+platform_username
+string
+required
+Username of the account linked to this object.
+
+Example:
+john.doe@gmail.com
+work_platform
+WorkPlatformAttribute
+id
+string<uuid>
+required
+Unique ID of the work platform.
+
+Example:
+9bb8913b-ddd9-430b-a66a-d74d846e6c66
+name
+string
+required
+Name of the work platform.
+
+Example:
+Instagram, Twitter
+logo_url
+string<uri>
+required
+Image URL of the work platform logo.
+
+Example:
+https://insightiq.ai/storage/instagram.png
+engagement
+object
+like_count
+integer
+Total likes.
+
+Example:
+42134
+dislike_count
+integer
+Total dislikes.
+
+Example:
+342
+comment_count
+integer
+Total comments.
+
+Example:
+4234
+impression_organic_count
+integer
+Total organic impressions.
+
+Example:
+4234
+reach_organic_count
+integer
+Total organic reach.
+
+Example:
+34
+save_count
+integer
+Total item saves.
+
+Example:
+43
+view_count
+integer
+Total views excluding replays.
+
+Example:
+42343
+watch_time_in_hours
+number
+If format is video - total watch time in hours.
+
+Example:
+1.5
+share_count
+integer or null
+Total shares.
+
+Example:
+42343
+impression_paid_count
+integer or null
+Total paid impressions.
+
+Example:
+4234
+reach_paid_count
+integer or null
+Total paid reach.
+
+Example:
+34
+email_open_rate
+number
+Percentage of emails that have been opened
+
+email_click_rate
+number
+Percentage of emails that have been clicked
+
+unsubscribe_count
+integer
+Number of unsubscribes on the email
+
+spam_report_count
+integer
+Number of email subscribers that report this post as spam
+
+click_count
+integer
+Total web click count on the content item
+
+additional_info
+object or null
+Currently only supported for Instagram. Check out this Airtable for the supported attributes across the different Instagram content types.
+
+replay_count
+integer
+Number of times content was viewed after initial play
+
+avg_watch_time_in_sec
+integer
+Average watch time of reel in seconds
+
+external_id
+string
+required
+Unique content ID on the platform.
+
+Example:
+12ccaf87
+title
+string
+required
+Title of the content item.
+
+Example:
+USA Tours
+format
+string
+Media type of the content item.
+
+Allowed values:
+VIDEO
+IMAGE
+AUDIO
+TEXT
+OTHER
+Example:
+VIDEO
+type
+string
+required
+Platform specific content type.
+
+Allowed values:
+VIDEO
+POST
+STORY
+TWEET
+BLOG
+IMAGE
+THREAD
+PODCAST
+TRACK
+OTHER
+REELS
+STREAM
+FEED
+IGTV
+RETWEET
+QUOTE
+REPLY
+Example:
+VIDEO
+url
+string<uri>
+required
+Platform content URL.
+
+Example:
+https://youtu.be/jzWweY4xPe8
+media_url
+string<uri> or null
+Direct media URL of the content item, which can be used to download the media item. This is usually a signed URL and may have certain expiry limits so we recommend using it for downloads as soon as possible (such as when a webhook is received), if you are looking to cache media files with you.
+
+Example:
+https://video.cdninstagram.com/v/t50.16885-16/273384537_472655704353078_8308247021721136693_n.mp4?_nc_cat=100&vs=661086908417570_1261186177&_nc_vs=HBksFQAYJEdGbUVTeEEyNlZ1NzRLMEJBRFd1NHJPbDBreHpidlZCQUFBRhUAAsgBABUAGCRHSnU0U3hEM2kwQ0VQVk1EQUM3S29OeTlueUJzYnZWQkFBQUYVAgLIAQAoABgAGwGIB3VzZV9vaWwBMRUAACbG3%2FGq0JXjPxUCKAJDMywXQCOhysCDEm8YEmRhc2hfYmFzZWxpbmVfMV92MREAdewHAA%3D%3D&ccb=1-5&_nc_sid=59939d&efg=eyJ2ZW5jb2RlX3RhZyI6InZ0c192b2RfdXJsZ2VuLjQ4MC5pZ3R2In0%3D&_nc_ohc=qcTIWWC39rQAX9xprW6&_nc_ht=video.cdninstagram.com&edm=AM6HXa8EAAAA&oh=00_AT85xcdCSq921RH5KCSfIukPMfk0QCajZEP5Ym4fY3p1Pw&oe=621D1EA5&_nc_rid=5d42feb0d5
+duration
+integer or null
+required
+Video duration in seconds (only available for YouTube).
+
+Example:
+523
+description
+string
+Description of the content item.
+
+Example:
+Super cuteLeopard print cardigan available in navy blue and the coffee color. Only $9.89 reg priced at $34.99 on @amazon #couponcommunity #amazonfinds #like #amazondeals #promocodes #rundeal #explorepage #amazon #neverpayfullprice #onlinedeals"
+hashtags
+array[string] or null
+List of hashtags found in the title or description of the content item. If there are no hashtags in the title or description of the content item, then the attribute will be null.
+
+mentions
+array[string] or null
+List of mentions found in the title or description of the content item. If there are no mentions in the title or description of the content item, then the attribute will be null.
+
+visibility
+string
+Visibility of the content item.
+
+Allowed values:
+PUBLIC
+PRIVATE
+Example:
+PUBLIC
+thumbnail_url
+string<uri>
+Thumbnail URL of the content item, which can be used to download the media thumbnail. This is usually a signed URL and may have certain expiry limits so we recommend using it for downloads as soon as possible (such as when a webhook is received), if you are looking to cache thumbnails with you.
+
+Example:
+https://youtu.be/jzWweY4xPe8.png
+persistent_thumbnail_url
+string<uri>
+Persistent thumbnail URL of the content item.
+
+Example:
+https://youtu.be/jzWweY4xPe8.png
+published_at
+string<date-time>
+required
+Publishing timestamp of the content item.
+
+Example:
+2021-05-26T00:00:00.000000
+platform_profile_id
+string
+required
+Unique profile ID of the user on the work platform.Show all...
+
+Example:
+UCEyLTzBtHJhlUwkeWhxfMXw
+platform_profile_name
+string
+required
+User's profile name on the work platform. This is not unique, is displayed prominently on the profile, usually editable and is most commonly associated with that user's identity on the platform.Show all...
+
+Example:
+CBSE WINNERS
+authors
+array[string]
+Names of the authors of the publication
+
+audience
+string
+Audience type that the post will be accessible to.
+
+Allowed values:
+FREE
+PAID
+BOTH
+platform
+string
+Platform the the post was published to.
+
+Allowed values:
+WEB
+EMAIL
+BOTH
+content_tags
+array[string]
+Content tags associated with the publication.
+
+sponsored
+object or null
+is_sponsored
+boolean
+Indicates if the content item is sponsored.
+
+Example:
+true
+tags
+string
+Sponsor tag (can include mentions of the sponsor)
+
+collaboration
+object or null
+has_collaborators
+boolean
+Indicates if the content item has collaborators.
+
+Example:
+true
+is_owned_by_platform_user
+boolean
+deprecated
+true, if the content is owned by the creator. In YouTube, it is possible that content is actually owned by another creator, but current creator has linked that content in their playlist. In such a case the content will still be listed for the current creator.
+
+Default:
+true
+
+
+
+# Sample Test/Show # 
+
+
+Username
+:
+username
+Password
+:
+password
+id*
+:
+string
+Send API Request
+
+Staging
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/publications/contents/{id}',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "id": "ca094d06-f9c5-4120-b67d-a6438ab2225b",
+  "created_at": "2021-11-23T19:37:05.526900",
+  "updated_at": "2021-11-23T19:37:05.526900",
+  "user": {
+    "id": "b0562ead-6282-404f-9e63-9da7bc0f838f",
+    "name": "Mark Ruffalo"
+  },
+  "account": {
+    "id": "1639b5c5-facb-4555-8e55-3433cafe0c6b",
+    "platform_username": "mark.ruffalo@gmail.com"
+  },
+  "work_platform": {
+    "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+    "name": "YouTube",
+    "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+  },
+  "engagement": {
+    "like_count": 1097,
+    "dislike_count": 234,
+    "comment_count": 45,
+    "impression_organic_count": 54,
+    "reach_organic_count": 8767,
+    "save_count": 24,
+    "view_count": 234,
+    "watch_time_in_hours": 0.5,
+    "share_count": null,
+    "impression_paid_count": null,
+    "reach_paid_count": null,
+    "additional_info": null
+  },
+  "external_id": "cc5db315-a81b-4773-804f-886c3d69c827",
+  "title": "Lesson plan for SATs - Physics",
+  "format": "VIDEO",
+  "type": "VIDEO",
+  "url": "https://www.youtube.com/watch?v=ZJ6y8OVJRw8",
+  "media_url": null,
+  "duration": null,
+  "description": "Lesson plan for SATs - Physics",
+  "visibility": "PUBLIC",
+  "thumbnail_url": "https://www.youtube.com/watch?v=ZJ6y8OVJRw8",
+  "published_at": "2021-05-26T00:00:00",
+  "platform_profile_id": "UCEyLTzBtHJhlUwkeWhxfMXw",
+  "platform_profile_name": "CBSE WINNERS",
+  "sponsored": null,
+  "collaboration": null
+}

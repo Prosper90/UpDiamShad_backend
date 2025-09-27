@@ -1,0 +1,1050 @@
+
+10   Retrieve all accounts
+get
+https://api.staging.insightiq.ai/v1/accounts
+Lists all Accounts. An Account represents the user account on the work platform end. A user can connect multiple account in the same or across multiple work platforms.
+
+Request
+Basic authentication is a simple authentication scheme built into the HTTP protocol. To use it, send your HTTP requests with an Authorization header that contains the word Basic followed by a space and a base64-encoded string username:password.
+
+Example: Authorization: Basic ZGVtbzpwQDU1dzByZA==
+
+Query Parameters
+limit
+integer
+The number of objects to be returned. It can be between 1 to 100. The default value is 10.
+
+>= 1
+<= 100
+Default:
+10
+offset
+integer
+The number of objects to skip. Use this argument for pagination. The default value is 0.
+
+>= 0
+Default:
+0
+user_id
+string
+Unique ID of the user.
+
+Example:
+12ccaf87-66c2-4b8e-9bf0-d0e8705334d1
+work_platform_id
+string
+Unique ID of the work platform.
+
+Example:
+12ccaf87-66c2-4b8e-9bf0-d0e8705334d1
+Responses
+200
+Returns all Account objects.
+
+Headers
+request-id
+string<uuid>
+required
+Unique ID associated with this request. Please quote this request while requesting support.
+
+Body
+
+application/json
+
+application/json
+responses
+/
+200
+data
+array[Account]
+required
+Represents work platform accounts that your users link via . Once a user connects a work platform account from the Connect SDK then an account object is created for the user.
+
+id
+string<uuid>
+required
+Unique ID of the connected account.
+
+Example:
+12ccaf87-66c2-4b8e-9bf0-d0e8705334d1
+created_at
+string<date-time>
+required
+Account creation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+updated_at
+string<date-time>
+required
+Account updation time (UTC date and time in ISO 8601 format)
+
+Example:
+2020-03-27T12:56:34.534978
+user
+UserAttribute
+required
+work_platform
+WorkPlatformAttribute
+required
+platform_username
+string or null
+required
+Username of the connected account. This is used to uniquely identify a user on any platform and usually the name that is present in the URLs, used to tag a user etc.Show all...
+
+Example:
+john.boyer@gmail.com
+profile_pic_url
+string<uri> or null
+URL of the user's profile image from the work platform.
+
+Example:
+https://platform_domain_name/profile_pic_image.png
+status
+string
+required
+Account connection status.
+
+Allowed values:
+CONNECTED
+NOT_CONNECTED
+SESSION_EXPIRED
+Example:
+CONNECTED
+platform_profile_name
+string
+required
+User's profile name on the work platform. This is not unique, is displayed prominently on the profile, usually editable and is most commonly associated with that user's identity on the platform.Show all...
+
+Example:
+CBSE WINNERS
+platform_profile_id
+string
+required
+Unique profile ID of the user on the work platform.Show all...
+
+Example:
+UCEyLTzBtHJhlUwkeWhxfMXw
+platform_profile_published_at
+string<date-time> or null
+Timestamp when the profile was created on the platform.
+
+Example:
+2020-03-27T12:56:34.534978
+data
+object
+required
+Represents the information category which is available for the connected account.
+
+metadata
+Metadata
+required
+Metadata object representing meta information about resources.
+
+offset
+integer
+required
+Offset value passed in the query parameter.
+
+Default:
+0
+Example:
+0
+limit
+integer
+required
+Limit value passed in the query parameter.
+
+Default:
+10
+Example:
+10
+from_date
+string<date> or null
+From date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2020-12-31
+to_date
+string<date> or null
+To date passed in the query parameter (YYYY-MM-DD).
+
+Example:
+2021-12-31
+
+
+# Sample Test/Show # 
+
+
+
+Username
+:
+username
+Password
+:
+password
+limit
+:
+defaults to: 10
+offset
+:
+defaults to: 0
+user_id
+:
+string
+work_platform_id
+:
+string
+Send API Request
+
+Staging
+
+
+
+import axios from 'axios';
+
+const options = {
+  method: 'GET',
+  url: 'https://api.staging.insightiq.ai/v1/accounts',
+  headers: {Accept: 'application/json', Authorization: 'Basic 123'}
+};
+
+try {
+  const { data } = await axios.request(options);
+  console.log(data);
+} catch (error) {
+  console.error(error);
+}
+
+
+{
+  "data": [
+    {
+      "id": "9b8cf321-1334-486e-873e-82d9de692abd",
+      "created_at": "2022-01-06T08:35:23.340738",
+      "updated_at": "2022-03-29T13:41:59.357322",
+      "user": {
+        "id": "a162c7e0-bc81-4142-8945-3d6a715d0f51",
+        "name": "LedAU1GL"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "Adf",
+      "profile_pic_url": null,
+      "status": "NOT_CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "81c71d15-dcaf-46e1-ab96-a73aea12bcfd",
+      "created_at": "2022-01-03T10:08:20.936493",
+      "updated_at": "2022-01-03T10:08:20.936493",
+      "user": {
+        "id": "9c03319a-ddde-443c-8439-b8f380e9a365",
+        "name": "5zS70mBZ"
+      },
+      "work_platform": {
+        "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "name": "YouTube",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+      },
+      "platform_username": "Sadsdfasf",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        },
+        "income": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "89294fb7-307a-417f-8aec-83e3a22ead58",
+      "created_at": "2021-12-28T14:00:08.671900",
+      "updated_at": "2021-12-28T14:02:11.631364",
+      "user": {
+        "id": "b1eacf57-f6b9-478c-a352-fe94974f8691",
+        "name": "DigiQT"
+      },
+      "work_platform": {
+        "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "name": "YouTube",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+      },
+      "platform_username": "123",
+      "profile_pic_url": null,
+      "status": "NOT_CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "f2c85637-8d3a-4b00-80ef-dfe8dc736832",
+      "created_at": "2021-12-28T14:01:24.176471",
+      "updated_at": "2021-12-28T14:01:24.176471",
+      "user": {
+        "id": "b1eacf57-f6b9-478c-a352-fe94974f8691",
+        "name": "DigiQT"
+      },
+      "work_platform": {
+        "id": "ad2fec62-2987-40a0-89fb-23485972598c",
+        "name": "Facebook",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_facebook.png"
+      },
+      "platform_username": "1234",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "8ee6474b-f255-443c-99da-c7cb2bfa84be",
+      "created_at": "2021-12-28T13:59:36.732127",
+      "updated_at": "2021-12-28T13:59:36.732127",
+      "user": {
+        "id": "e85f084d-64c7-4271-9b42-ecef8e397b99",
+        "name": "DigiQT"
+      },
+      "work_platform": {
+        "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "name": "YouTube",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+      },
+      "platform_username": "123",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "1a3af1aa-e15f-4920-9507-c847f9878e19",
+      "created_at": "2021-12-14T05:48:44.119208",
+      "updated_at": "2021-12-14T05:48:44.119208",
+      "user": {
+        "id": "b20ac291-2a1b-49bc-b27a-fdc2d0e789d4",
+        "name": "h51u3qsm"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "Sda",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "b444a9b7-905a-4f35-b7ce-950d32f6355a",
+      "created_at": "2021-12-14T05:45:31.414744",
+      "updated_at": "2021-12-14T05:45:31.414744",
+      "user": {
+        "id": "63ea679d-b421-4de6-91db-94ea4bd78816",
+        "name": "Kgga4vQX"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "Asf",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "7c4f814c-b7ba-4e34-9ce8-3a3bd334883f",
+      "created_at": "2021-12-14T05:44:11.597584",
+      "updated_at": "2021-12-14T05:45:10.952968",
+      "user": {
+        "id": "63ea679d-b421-4de6-91db-94ea4bd78816",
+        "name": "Kgga4vQX"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "Hello",
+      "profile_pic_url": null,
+      "status": "NOT_CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "ce22d588-99b1-4582-9e14-d2dc638b3b26",
+      "created_at": "2021-12-14T05:44:37.414600",
+      "updated_at": "2021-12-14T05:44:37.414600",
+      "user": {
+        "id": "63ea679d-b421-4de6-91db-94ea4bd78816",
+        "name": "Kgga4vQX"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "Asghdfha",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "11cb31f6-0d56-4eb4-b4d0-63794f8242fc",
+      "created_at": "2021-12-13T14:16:09.083338",
+      "updated_at": "2021-12-13T14:16:09.083338",
+      "user": {
+        "id": "4532e289-6301-4cdf-af6b-aef83ab01315",
+        "name": "LztHEgLI"
+      },
+      "work_platform": {
+        "id": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "name": "Twitter",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitter.png"
+      },
+      "platform_username": "Dsfda",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "e0852c98-0c7f-4498-8626-2bda43cd0667",
+      "created_at": "2021-12-13T14:15:52.494149",
+      "updated_at": "2021-12-13T14:15:52.494149",
+      "user": {
+        "id": "4532e289-6301-4cdf-af6b-aef83ab01315",
+        "name": "LztHEgLI"
+      },
+      "work_platform": {
+        "id": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "name": "Twitter",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitter.png"
+      },
+      "platform_username": "Hello",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": null,
+      "platform_profile_id": null,
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "9ccb74b5-6074-4ec8-b597-830cbb94f103",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "c931d928-c17d-49ee-89d0-ab18a825bd9b",
+        "name": "Chad Becker"
+      },
+      "work_platform": {
+        "id": "ad2fec62-2987-40a0-89fb-23485972598c",
+        "name": "Facebook",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_facebook.png"
+      },
+      "platform_username": "chad.becker@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "Chad Becker Official",
+      "platform_profile_id": "7720345617123",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "6ad07dba-6925-4515-abb4-f63875ada3b2",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "4d913581-99f2-41a8-9309-9b008511c211",
+        "name": "Julia Luis"
+      },
+      "work_platform": {
+        "id": "ad2fec62-2987-40a0-89fb-23485972598c",
+        "name": "Facebook",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_facebook.png"
+      },
+      "platform_username": "julia.luis@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "Veep Official",
+      "platform_profile_id": "7720345617125",
+      "platform_profile_published_at": "2020-01-01T00:00:00",
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "a3970259-6740-4131-9058-2f5a4c0d17fa",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "3b38559b-892f-475d-b4df-7248ef1fd405",
+        "name": "Jonah Hill"
+      },
+      "work_platform": {
+        "id": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "name": "Twitter",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitter.png"
+      },
+      "platform_username": "jonah.hill@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "realJonah",
+      "platform_profile_id": "2725104190",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "3839334f-6c01-4ad3-8ff1-68e106148702",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "8ba1ac32-0f3c-4cf0-8d89-79a183258f6a",
+        "name": "Peter Parker"
+      },
+      "work_platform": {
+        "id": "7645460a-96e0-4192-a3ce-a1fc30641f72",
+        "name": "Twitter",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitter.png"
+      },
+      "platform_username": "peter.parker@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "peterparker",
+      "platform_profile_id": "2725104191",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "f5e89cea-18b6-4479-a4dd-64a48217e759",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "ac0d5da5-f8c1-4139-8945-825986da9c1e",
+        "name": "Chris Evans"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "chris.evans@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "chrisevans",
+      "platform_profile_id": "192342567",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD",
+          "audience": {
+            "status": "SYNCED",
+            "last_sync_at": "2020-01-02T00:00:00.000000",
+            "refresh_since": null,
+            "data_available_from": null,
+            "monitoring_type": "STANDARD"
+          }
+        }
+      }
+    },
+    {
+      "id": "44554e73-5879-4764-a37c-fa3a47e25c2a",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "28722faa-5356-483d-a57b-384fa01859dd",
+        "name": "Robert Downey"
+      },
+      "work_platform": {
+        "id": "9bb8913b-ddd9-430b-a66a-d74d846e6c66",
+        "name": "Instagram",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_instagram.png"
+      },
+      "platform_username": "robert.downey@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "robertdowney",
+      "platform_profile_id": "192342568",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD",
+          "audience": {
+            "status": "SYNCED",
+            "last_sync_at": "2020-01-02T00:00:00.000000",
+            "refresh_since": null,
+            "data_available_from": null,
+            "monitoring_type": "STANDARD"
+          }
+        }
+      }
+    },
+    {
+      "id": "1639b5c5-facb-4555-8e55-3433cafe0c6b",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "b0562ead-6282-404f-9e63-9da7bc0f838f",
+        "name": "Mark Ruffalo"
+      },
+      "work_platform": {
+        "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "name": "YouTube",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+      },
+      "platform_username": "mark.ruffalo@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "CBSE WINNERS",
+      "platform_profile_id": "UCEyLTzBtHJhlUwkeWhxfMXw",
+      "platform_profile_published_at": "2020-01-01T00:00:00",
+      "data": {
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD",
+          "audience": {
+            "status": "SYNCED",
+            "last_sync_at": "2020-01-02T00:00:00.000000",
+            "refresh_since": null,
+            "data_available_from": null,
+            "monitoring_type": "STANDARD"
+          }
+        },
+        "income": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "b09dbb96-85e2-44fd-87db-4b891b60745a",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "79be6897-e0f4-43d2-8df3-4af15b2862f0",
+        "name": "Sam Curran"
+      },
+      "work_platform": {
+        "id": "14d9ddf5-51c6-415e-bde6-f8ed36ad7054",
+        "name": "YouTube",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_youtube.png"
+      },
+      "platform_username": "sam.curran@gmail.com",
+      "profile_pic_url": "2020-01-01",
+      "status": "CONNECTED",
+      "platform_profile_name": "samECB",
+      "platform_profile_id": "2755104190",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD",
+          "audience": {
+            "status": "SYNCED",
+            "last_sync_at": "2020-01-02T00:00:00.000000",
+            "refresh_since": null,
+            "data_available_from": null,
+            "monitoring_type": "STANDARD"
+          }
+        }
+      }
+    },
+    {
+      "id": "e42ad363-6e49-4b69-9078-41f8820284e0",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "c9342ccd-14ec-4fb1-b6c1-8dfc5df7c518",
+        "name": "Jerry Seinfeld"
+      },
+      "work_platform": {
+        "id": "de55aeec-0dc8-4119-bf90-16b3d1f0c987",
+        "name": "TikTok",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_tiktok.png"
+      },
+      "platform_username": "jerry.seinfeld@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "jerryWho",
+      "platform_profile_id": "126789012",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "1fbac095-5343-4367-80b3-247f4c449ad4",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "c21c3a73-ade9-435b-8033-53d3e0549366",
+        "name": "Lisa Kudrow"
+      },
+      "work_platform": {
+        "id": "de55aeec-0dc8-4119-bf90-16b3d1f0c987",
+        "name": "TikTok",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_tiktok.png"
+      },
+      "platform_username": "lisa.kudrow@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "smellyCat",
+      "platform_profile_id": "126789011",
+      "platform_profile_published_at": "2020-01-01T00:00:00",
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "35bbe1ed-4775-4054-a979-64d319e49a2a",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "bc200267-631f-42e2-b0d9-aae786ff85de",
+        "name": "Justin Gatlin"
+      },
+      "work_platform": {
+        "id": "e4de6c01-5b78-4fc0-a651-24f44134457b",
+        "name": "Twitch",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitch.png"
+      },
+      "platform_username": "justin.gatlin@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "justinGames",
+      "platform_profile_id": "126789011xyz",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    },
+    {
+      "id": "afed96b3-be19-4383-aade-9ed4896a04e8",
+      "created_at": "2021-12-13T07:54:41.078254",
+      "updated_at": "2021-12-13T07:54:41.078254",
+      "user": {
+        "id": "dbada397-ed37-48e5-98bf-018808a186d9",
+        "name": "Simu Liu"
+      },
+      "work_platform": {
+        "id": "e4de6c01-5b78-4fc0-a651-24f44134457b",
+        "name": "Twitch",
+        "logo_url": "https://cdn.insightiq.ai/platforms_logo/logos/logo_twitch.png"
+      },
+      "platform_username": "simu.liu@gmail.com",
+      "profile_pic_url": null,
+      "status": "CONNECTED",
+      "platform_profile_name": "shangGamer",
+      "platform_profile_id": "126789011xy234",
+      "platform_profile_published_at": null,
+      "data": {
+        "identity": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "monitoring_type": "STANDARD"
+        },
+        "engagement": {
+          "status": "SYNCED",
+          "last_sync_at": "2020-01-02T00:00:00.000000",
+          "refresh_since": null,
+          "data_available_from": null,
+          "monitoring_type": "STANDARD"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "offset": 0,
+    "limit": 100,
+    "from_date": null,
+    "to_date": null
+  }
+}
+
