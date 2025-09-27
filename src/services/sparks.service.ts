@@ -29,9 +29,9 @@ export const SUSTAINABILITY_WEIGHTS = {
 
 // Level progression thresholds (Sparks needed for each level)
 export const LEVEL_THRESHOLDS = {
-  1: 0,     // Pulse
-  2: 1000,  // Rhythm
-  3: 5000,  // Harmony
+  1: 0, // Pulse
+  2: 1000, // Rhythm
+  3: 5000, // Harmony
   4: 15000, // Melody
   5: 50000, // Resonance
 };
@@ -67,9 +67,13 @@ class SparksService {
    * Convert cPoints to Sparks with sustainability weighting
    * This is the second step: cPoints → Sparks
    */
-  async convertCPointsToSparks(userId: string): Promise<SparksCalculationResult> {
+  async convertCPointsToSparks(
+    userId: string
+  ): Promise<SparksCalculationResult> {
     try {
-      logger.info("Starting cPoints to Sparks conversion for user:", { userId });
+      logger.info("Starting cPoints to Sparks conversion for user:", {
+        userId,
+      });
 
       const user = await User.findById(userId);
       if (!user) {
@@ -109,7 +113,9 @@ class SparksService {
   /**
    * Calculate Sparks from cPoints history with sustainability factors
    */
-  private calculateSparksFromCPoints(cPointsHistory: any[]): SparksCalculationResult {
+  private calculateSparksFromCPoints(
+    cPointsHistory: any[]
+  ): SparksCalculationResult {
     let totalSparks = 0;
     let totalCPoints = 0;
     let weightedTimeSum = 0;
@@ -140,13 +146,16 @@ class SparksService {
     }
 
     // Calculate consistency bonus
-    const consistencyMultiplier = this.calculateConsistencyBonus(cPointsHistory);
+    const consistencyMultiplier =
+      this.calculateConsistencyBonus(cPointsHistory);
     totalSparks *= consistencyMultiplier;
 
     // Calculate weighted averages
     const avgTimeWeight = totalWeight > 0 ? weightedTimeSum / totalWeight : 0;
-    const avgPlatformWeight = totalWeight > 0 ? weightedPlatformSum / totalWeight : 0;
-    const sustainabilityMultiplier = avgTimeWeight * avgPlatformWeight * consistencyMultiplier;
+    const avgPlatformWeight =
+      totalWeight > 0 ? weightedPlatformSum / totalWeight : 0;
+    const sustainabilityMultiplier =
+      avgTimeWeight * avgPlatformWeight * consistencyMultiplier;
 
     // Calculate level information
     const levelInfo = this.calculateLevelInfo(Math.round(totalSparks));
@@ -169,12 +178,15 @@ class SparksService {
    */
   private calculateTimeWeight(processedAt: Date): number {
     const now = new Date();
-    const daysDiff = (now.getTime() - processedAt.getTime()) / (1000 * 60 * 60 * 24);
+    const daysDiff =
+      (now.getTime() - processedAt.getTime()) / (1000 * 60 * 60 * 24);
 
     if (daysDiff <= 7) return SUSTAINABILITY_WEIGHTS.timeMultipliers.lastWeek;
     if (daysDiff <= 30) return SUSTAINABILITY_WEIGHTS.timeMultipliers.lastMonth;
-    if (daysDiff <= 90) return SUSTAINABILITY_WEIGHTS.timeMultipliers.last3Months;
-    if (daysDiff <= 180) return SUSTAINABILITY_WEIGHTS.timeMultipliers.last6Months;
+    if (daysDiff <= 90)
+      return SUSTAINABILITY_WEIGHTS.timeMultipliers.last3Months;
+    if (daysDiff <= 180)
+      return SUSTAINABILITY_WEIGHTS.timeMultipliers.last6Months;
     return SUSTAINABILITY_WEIGHTS.timeMultipliers.older;
   }
 
@@ -197,7 +209,10 @@ class SparksService {
     // Calculate weighted average based on platform distribution
     let weightedSum = 0;
     for (const [platform, count] of Object.entries(platformCounts)) {
-      const platformWeight = SUSTAINABILITY_WEIGHTS.platformMultipliers[platform as keyof typeof SUSTAINABILITY_WEIGHTS.platformMultipliers] || 1.0;
+      const platformWeight =
+        SUSTAINABILITY_WEIGHTS.platformMultipliers[
+          platform as keyof typeof SUSTAINABILITY_WEIGHTS.platformMultipliers
+        ] || 1.0;
       const platformRatio = count / totalContent;
       weightedSum += platformWeight * platformRatio;
     }
@@ -209,22 +224,30 @@ class SparksService {
    * Calculate consistency bonus based on posting frequency
    */
   private calculateConsistencyBonus(cPointsHistory: any[]): number {
-    if (cPointsHistory.length < 2) return SUSTAINABILITY_WEIGHTS.consistencyBonus.irregular;
+    if (cPointsHistory.length < 2)
+      return SUSTAINABILITY_WEIGHTS.consistencyBonus.irregular;
 
     // Calculate average time between cPoints calculations
     const timeDiffs: number[] = [];
     for (let i = 1; i < cPointsHistory.length; i++) {
-      const diff = cPointsHistory[i - 1].processedAt.getTime() - cPointsHistory[i].processedAt.getTime();
+      const diff =
+        cPointsHistory[i - 1].processedAt.getTime() -
+        cPointsHistory[i].processedAt.getTime();
       timeDiffs.push(diff / (1000 * 60 * 60 * 24)); // Convert to days
     }
 
-    const avgDaysBetween = timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length;
+    const avgDaysBetween =
+      timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length;
 
     // Classify consistency
-    if (avgDaysBetween <= 1) return SUSTAINABILITY_WEIGHTS.consistencyBonus.daily;
-    if (avgDaysBetween <= 7) return SUSTAINABILITY_WEIGHTS.consistencyBonus.weekly;
-    if (avgDaysBetween <= 14) return SUSTAINABILITY_WEIGHTS.consistencyBonus.biweekly;
-    if (avgDaysBetween <= 30) return SUSTAINABILITY_WEIGHTS.consistencyBonus.monthly;
+    if (avgDaysBetween <= 1)
+      return SUSTAINABILITY_WEIGHTS.consistencyBonus.daily;
+    if (avgDaysBetween <= 7)
+      return SUSTAINABILITY_WEIGHTS.consistencyBonus.weekly;
+    if (avgDaysBetween <= 14)
+      return SUSTAINABILITY_WEIGHTS.consistencyBonus.biweekly;
+    if (avgDaysBetween <= 30)
+      return SUSTAINABILITY_WEIGHTS.consistencyBonus.monthly;
     return SUSTAINABILITY_WEIGHTS.consistencyBonus.irregular;
   }
 
@@ -237,7 +260,14 @@ class SparksService {
     progress: number;
     nextLevelAt: number;
   } {
-    const levelNames = ["", "Pulse", "Rhythm", "Harmony", "Melody", "Resonance"];
+    const levelNames = [
+      "",
+      "Pulse",
+      "Rhythm",
+      "Harmony",
+      "Melody",
+      "Resonance",
+    ];
 
     let currentLevel = 1;
     for (const [level, threshold] of Object.entries(LEVEL_THRESHOLDS)) {
@@ -246,13 +276,17 @@ class SparksService {
       }
     }
 
-    const currentThreshold = LEVEL_THRESHOLDS[currentLevel as keyof typeof LEVEL_THRESHOLDS];
+    const currentThreshold =
+      LEVEL_THRESHOLDS[currentLevel as keyof typeof LEVEL_THRESHOLDS];
     const nextLevel = currentLevel < 5 ? currentLevel + 1 : 5;
-    const nextThreshold = LEVEL_THRESHOLDS[nextLevel as keyof typeof LEVEL_THRESHOLDS];
+    const nextThreshold =
+      LEVEL_THRESHOLDS[nextLevel as keyof typeof LEVEL_THRESHOLDS];
 
-    const progress = nextLevel > currentLevel
-      ? ((sparks - currentThreshold) / (nextThreshold - currentThreshold)) * 100
-      : 100;
+    const progress =
+      nextLevel > currentLevel
+        ? ((sparks - currentThreshold) / (nextThreshold - currentThreshold)) *
+          100
+        : 100;
 
     return {
       currentLevel,
@@ -265,7 +299,10 @@ class SparksService {
   /**
    * Update user's Sparks and level in database
    */
-  private async updateUserSparks(userId: string, totalSparks: number): Promise<void> {
+  private async updateUserSparks(
+    userId: string,
+    totalSparks: number
+  ): Promise<void> {
     const levelInfo = this.calculateLevelInfo(totalSparks);
 
     await User.findByIdAndUpdate(userId, {
@@ -314,7 +351,14 @@ class SparksService {
       }
 
       const levelInfo = this.calculateLevelInfo(user.wavzProfile.sparks);
-      const levelNames = ["", "Pulse", "Rhythm", "Harmony", "Melody", "Resonance"];
+      const levelNames = [
+        "",
+        "Pulse",
+        "Rhythm",
+        "Harmony",
+        "Melody",
+        "Resonance",
+      ];
 
       return {
         sparks: user.wavzProfile.sparks,
@@ -377,13 +421,15 @@ class SparksService {
   /**
    * Get Sparks leaderboard
    */
-  async getSparksLeaderboard(limit: number = 50): Promise<Array<{
-    userId: string;
-    displayName: string;
-    sparks: number;
-    level: number;
-    levelName: string;
-  }>> {
+  async getSparksLeaderboard(limit: number = 50): Promise<
+    Array<{
+      userId: string;
+      displayName: string;
+      sparks: number;
+      level: number;
+      levelName: string;
+    }>
+  > {
     try {
       const users = await User.find({})
         .sort({ "wavzProfile.sparks": -1 })
@@ -391,9 +437,16 @@ class SparksService {
         .select("displayName wavzProfile.sparks wavzProfile.level")
         .exec();
 
-      const levelNames = ["", "Pulse", "Rhythm", "Harmony", "Melody", "Resonance"];
+      const levelNames = [
+        "",
+        "Pulse",
+        "Rhythm",
+        "Harmony",
+        "Melody",
+        "Resonance",
+      ];
 
-      return users.map(user => ({
+      return users.map((user) => ({
         userId: user._id.toString(),
         displayName: user.displayName,
         sparks: user.wavzProfile.sparks,
@@ -420,7 +473,9 @@ class SparksService {
     // 1. Return a default response
     // 2. Or map this to the new cPoints flow
 
-    logger.warn("Using legacy calculatePlatformSparks method - consider updating to new cPoints flow");
+    logger.warn(
+      "Using legacy calculatePlatformSparks method - consider updating to new cPoints flow"
+    );
 
     return {
       totalSparks: 0,
@@ -433,7 +488,9 @@ class SparksService {
    * Legacy method: Calculate total sparks (old flow)
    */
   calculateTotalSparks(platformResults: any[]): any {
-    logger.warn("Using legacy calculateTotalSparks method - consider updating to new cPoints flow");
+    logger.warn(
+      "Using legacy calculateTotalSparks method - consider updating to new cPoints flow"
+    );
     return {
       totalSparks: 0,
       platformBreakdown: [],
@@ -444,7 +501,10 @@ class SparksService {
   /**
    * Legacy method: Update user sparks (made public for backward compatibility)
    */
-  async updateUserSparksLegacy(userId: string, totalSparks: number): Promise<void> {
+  async updateUserSparksLegacy(
+    userId: string,
+    totalSparks: number
+  ): Promise<void> {
     return this.updateUserSparks(userId, totalSparks);
   }
 }
