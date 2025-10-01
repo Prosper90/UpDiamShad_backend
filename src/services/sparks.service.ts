@@ -1,5 +1,10 @@
+import { User } from "../models/User";
+import { CPointsHistory } from "../models/CPointsHistory";
 import { logger } from "../config/logger";
-import { EngagementSnapshot, IEngagementSnapshot } from "../models/EngagementSnapshot";
+import {
+  EngagementSnapshot,
+  IEngagementSnapshot,
+} from "../models/EngagementSnapshot";
 
 // Dummy Sparks rates - client will provide real rates later
 export const SPARKS_RATES = {
@@ -11,126 +16,159 @@ export const SPARKS_RATES = {
     watchHour: 10,
     subscriber: 50,
   },
-  instagram: {
-    like: 1,
-    comment: 3,
-    view: 0.05,
-    save: 2,
-    share: 4,
-    follower: 25,
+  platformMultipliers: {
+    youtube: 1.2, // Higher sustainability for long-form content
+    instagram: 1.0,
+    tiktok: 0.9, // Viral but less sustainable
+    twitter: 0.8, // Fast-moving platform
+    spotify: 1.3, // High sustainability for music
   },
-  twitter: {
-    like: 1,
-    retweet: 3,
-    comment: 2,
-    impression: 0.01,
-    follower: 20,
+  consistencyBonus: {
+    daily: 1.5,
+    weekly: 1.2,
+    biweekly: 1.0,
+    monthly: 0.8,
+    irregular: 0.6,
   },
-  tiktok: {
-    like: 1,
-    comment: 3,
-    view: 0.02,
-    share: 4,
-    follower: 30,
-  },
-  spotify: {
-    stream: 0.5,
-    playlist: 10,
-    follower: 40,
-  }
 };
 
-export interface PlatformMetrics {
-  platform: string;
-  totalLikes: number;
-  totalDislikes?: number;
-  totalComments: number;
-  totalViews: number;
-  totalShares?: number;
-  totalSaves?: number;
-  totalWatchTime?: number;
-  totalImpressions?: number;
-  totalReach?: number;
-  followerCount?: number;
-}
+// Level progression thresholds (Sparks needed for each level)
+export const LEVEL_THRESHOLDS = {
+  1: 0, // Pulse
+  2: 1000, // Rhythm
+  3: 5000, // Harmony
+  4: 15000, // Melody
+  5: 50000, // Resonance
+};
 
 export interface SparksCalculationResult {
-  platform: string;
   totalSparks: number;
   breakdown: {
-    likes: number;
-    dislikes?: number;
-    comments: number;
-    views: number;
-    shares?: number;
-    saves?: number;
-    watchTime?: number;
-    impressions?: number;
-    followers?: number;
+    baseCPoints: number;
+    sustainabilityMultiplier: number;
+    consistencyBonus: number;
+    timeWeighting: number;
+    platformWeighting: number;
   };
-  metrics: PlatformMetrics;
+  levelInfo: {
+    currentLevel: number;
+    levelName: string;
+    progress: number;
+    nextLevelAt: number;
+  };
+}
+
+export interface CPointsToSparksConversion {
+  cPointsAmount: number;
+  sustainabilityScore: number;
+  timeWeight: number;
+  platformWeight: number;
+  consistencyMultiplier: number;
+  resultingSparks: number;
 }
 
 class SparksService {
   /**
-   * Calculate Sparks for a specific platform using dummy rates
+   * Convert cPoints to Sparks with sustainability weighting
+   * This is the second step: cPoints → Sparks
    */
-  calculatePlatformSparks(metrics: PlatformMetrics): SparksCalculationResult {
-    const platform = metrics.platform.toLowerCase();
-    const rates = SPARKS_RATES[platform as keyof typeof SPARKS_RATES];
+  async convertCPointsToSparks(
+    userId: string
+  ): Promise<SparksCalculationResult> {
+    try {
+      logger.info("Starting cPoints to Sparks conversion for user:", {
+        userId,
+      });
 
-    if (!rates) {
-      logger.warn(`No Sparks rates defined for platform: ${platform}`);
-      // Default calculation for unknown platforms
-      return {
-        platform: metrics.platform,
-        totalSparks: (metrics.totalLikes * 1) + (metrics.totalComments * 2) + (metrics.totalViews * 0.01),
-        breakdown: {
-          likes: metrics.totalLikes * 1,
-          comments: metrics.totalComments * 2,
-          views: metrics.totalViews * 0.01,
-        },
-        metrics
-      };
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Get recent cPoints history for conversion
+      const cPointsHistory = await CPointsHistory.find({ userId })
+        .sort({ processedAt: -1 })
+        .limit(10) // Last 10 periods
+        .exec();
+
+      if (cPointsHistory.length === 0) {
+        logger.warn("No cPoints history found for user:", { userId });
+        return this.createEmptyResult();
+      }
+
+      // Calculate Sparks from cPoints with sustainability weighting
+      const sparksResult = this.calculateSparksFromCPoints(cPointsHistory);
+
+      // Update user's Sparks and level
+      await this.updateUserSparks(userId, sparksResult.totalSparks);
+
+      logger.info("cPoints to Sparks conversion completed:", {
+        userId,
+        totalSparks: sparksResult.totalSparks,
+        level: sparksResult.levelInfo.currentLevel,
+      });
+
+      return sparksResult;
+    } catch (error) {
+      logger.error("cPoints to Sparks conversion failed:", error);
+      throw error;
     }
+  }
 
-    const breakdown: any = {};
+  /**
+   * Calculate Sparks from cPoints history with sustainability factors
+   */
+  private calculateSparksFromCPoints(
+    cPointsHistory: any[]
+  ): SparksCalculationResult {
     let totalSparks = 0;
 
     // Calculate based on platform-specific rates
-    if (platform === 'youtube') {
+    if (platform === "youtube") {
       const youtubeRates = rates as typeof SPARKS_RATES.youtube;
       breakdown.likes = (metrics.totalLikes || 0) * youtubeRates.like;
       breakdown.dislikes = (metrics.totalDislikes || 0) * youtubeRates.dislike;
       breakdown.comments = (metrics.totalComments || 0) * youtubeRates.comment;
       breakdown.views = (metrics.totalViews || 0) * youtubeRates.view;
-      breakdown.watchTime = (metrics.totalWatchTime || 0) * youtubeRates.watchHour;
-      breakdown.followers = (metrics.followerCount || 0) * youtubeRates.subscriber;
+      breakdown.watchTime =
+        (metrics.totalWatchTime || 0) * youtubeRates.watchHour;
+      breakdown.followers =
+        (metrics.followerCount || 0) * youtubeRates.subscriber;
 
-      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
-    }
-    else if (platform === 'instagram') {
+      totalSparks = (Object.values(breakdown) as number[]).reduce(
+        (sum: number, value: number) => sum + value,
+        0
+      );
+    } else if (platform === "instagram") {
       const instagramRates = rates as typeof SPARKS_RATES.instagram;
       breakdown.likes = (metrics.totalLikes || 0) * instagramRates.like;
-      breakdown.comments = (metrics.totalComments || 0) * instagramRates.comment;
+      breakdown.comments =
+        (metrics.totalComments || 0) * instagramRates.comment;
       breakdown.views = (metrics.totalViews || 0) * instagramRates.view;
       breakdown.saves = (metrics.totalSaves || 0) * instagramRates.save;
       breakdown.shares = (metrics.totalShares || 0) * instagramRates.share;
-      breakdown.followers = (metrics.followerCount || 0) * instagramRates.follower;
+      breakdown.followers =
+        (metrics.followerCount || 0) * instagramRates.follower;
 
-      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
-    }
-    else if (platform === 'twitter') {
+      totalSparks = (Object.values(breakdown) as number[]).reduce(
+        (sum: number, value: number) => sum + value,
+        0
+      );
+    } else if (platform === "twitter") {
       const twitterRates = rates as typeof SPARKS_RATES.twitter;
       breakdown.likes = (metrics.totalLikes || 0) * twitterRates.like;
       breakdown.comments = (metrics.totalComments || 0) * twitterRates.comment;
       breakdown.shares = (metrics.totalShares || 0) * twitterRates.retweet; // retweets
-      breakdown.impressions = (metrics.totalImpressions || 0) * twitterRates.impression;
-      breakdown.followers = (metrics.followerCount || 0) * twitterRates.follower;
+      breakdown.impressions =
+        (metrics.totalImpressions || 0) * twitterRates.impression;
+      breakdown.followers =
+        (metrics.followerCount || 0) * twitterRates.follower;
 
-      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
-    }
-    else if (platform === 'tiktok') {
+      totalSparks = (Object.values(breakdown) as number[]).reduce(
+        (sum: number, value: number) => sum + value,
+        0
+      );
+    } else if (platform === "tiktok") {
       const tiktokRates = rates as typeof SPARKS_RATES.tiktok;
       breakdown.likes = (metrics.totalLikes || 0) * tiktokRates.like;
       breakdown.comments = (metrics.totalComments || 0) * tiktokRates.comment;
@@ -138,75 +176,85 @@ class SparksService {
       breakdown.shares = (metrics.totalShares || 0) * tiktokRates.share;
       breakdown.followers = (metrics.followerCount || 0) * tiktokRates.follower;
 
-      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
-    }
-    else if (platform === 'spotify') {
+      totalSparks = (Object.values(breakdown) as number[]).reduce(
+        (sum: number, value: number) => sum + value,
+        0
+      );
+    } else if (platform === "spotify") {
       const spotifyRates = rates as typeof SPARKS_RATES.spotify;
       breakdown.views = (metrics.totalViews || 0) * spotifyRates.stream; // streams as views
-      breakdown.followers = (metrics.followerCount || 0) * spotifyRates.follower;
+      breakdown.followers =
+        (metrics.followerCount || 0) * spotifyRates.follower;
 
-      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce(
+        (sum: number, value: number) => sum + value,
+        0
+      );
     }
 
     logger.info("Calculated platform Sparks:", {
       platform,
       totalSparks,
-      breakdown
+      breakdown,
     });
 
     return {
-      platform: metrics.platform,
-      totalSparks: Math.round(totalSparks),
-      breakdown,
-      metrics
+      currentLevel,
+      levelName: levelNames[currentLevel],
+      progress: Math.min(100, Math.max(0, progress)),
+      nextLevelAt: nextThreshold,
     };
   }
 
   /**
-   * Calculate total Sparks across all platforms
+   * Update user's Sparks and level in database
    */
-  calculateTotalSparks(platformResults: SparksCalculationResult[]): {
-    totalSparks: number;
-    platformBreakdown: SparksCalculationResult[];
-    consolidatedMetrics: {
-      totalLikes: number;
-      totalComments: number;
-      totalViews: number;
-      totalFollowers: number;
-      totalPosts: number;
-    };
-  } {
-    const totalSparks = platformResults.reduce((sum, result) => sum + result.totalSparks, 0);
+  private async updateUserSparks(
+    userId: string,
+    totalSparks: number
+  ): Promise<void> {
+    const levelInfo = this.calculateLevelInfo(totalSparks);
 
-    const consolidatedMetrics = {
-      totalLikes: platformResults.reduce((sum, r) => sum + (r.metrics.totalLikes || 0), 0),
-      totalComments: platformResults.reduce((sum, r) => sum + (r.metrics.totalComments || 0), 0),
-      totalViews: platformResults.reduce((sum, r) => sum + (r.metrics.totalViews || 0), 0),
-      totalFollowers: platformResults.reduce((sum, r) => sum + (r.metrics.followerCount || 0), 0),
-      totalPosts: platformResults.length > 0 ? platformResults.reduce((sum, r) => sum + (r.metrics as any).totalContent, 0) : 0,
-    };
-
-    logger.info("Calculated total Sparks:", {
-      totalSparks,
-      platformCount: platformResults.length,
-      consolidatedMetrics
+    await User.findByIdAndUpdate(userId, {
+      "wavzProfile.sparks": totalSparks,
+      "wavzProfile.level": levelInfo.currentLevel,
+      "wavzProfile.levelProgress": Math.round(levelInfo.progress),
     });
+  }
 
+  /**
+   * Create empty result for users with no cPoints history
+   */
+  private createEmptyResult(): SparksCalculationResult {
     return {
-      totalSparks: Math.round(totalSparks),
-      platformBreakdown: platformResults,
-      consolidatedMetrics
+      totalSparks: 0,
+      breakdown: {
+        baseCPoints: 0,
+        sustainabilityMultiplier: 0,
+        consistencyBonus: 1,
+        timeWeighting: 1,
+        platformWeighting: 1,
+      },
+      levelInfo: {
+        currentLevel: 1,
+        levelName: "Pulse",
+        progress: 0,
+        nextLevelAt: LEVEL_THRESHOLDS[2],
+      },
     };
   }
 
   /**
    * Get the last engagement snapshot for an account
    */
-  async getLastSnapshot(userId: string, accountId: string): Promise<IEngagementSnapshot | null> {
+  async getLastSnapshot(
+    userId: string,
+    accountId: string
+  ): Promise<IEngagementSnapshot | null> {
     try {
       const snapshot = await EngagementSnapshot.findOne({
         userId,
-        accountId
+        accountId,
       }).sort({ syncedAt: -1 });
 
       return snapshot;
@@ -214,7 +262,7 @@ class SparksService {
       logger.error("Failed to get last snapshot:", {
         userId,
         accountId,
-        error: error.message
+        error: error.message,
       });
       return null;
     }
@@ -223,7 +271,10 @@ class SparksService {
   /**
    * Calculate delta between current and previous snapshot
    */
-  calculateDelta(currentMetrics: PlatformMetrics, previousSnapshot: IEngagementSnapshot | null): any {
+  calculateDelta(
+    currentMetrics: PlatformMetrics,
+    previousSnapshot: IEngagementSnapshot | null
+  ): any {
     if (!previousSnapshot) {
       // First sync - all current metrics are "new"
       return {
@@ -241,15 +292,46 @@ class SparksService {
 
     // Calculate what's NEW since last sync
     const delta = {
-      likes: Math.max(0, currentMetrics.totalLikes - previousSnapshot.snapshot.totalLikes),
-      dislikes: Math.max(0, (currentMetrics.totalDislikes || 0) - previousSnapshot.snapshot.totalDislikes),
-      comments: Math.max(0, currentMetrics.totalComments - previousSnapshot.snapshot.totalComments),
-      views: Math.max(0, currentMetrics.totalViews - previousSnapshot.snapshot.totalViews),
-      shares: Math.max(0, (currentMetrics.totalShares || 0) - previousSnapshot.snapshot.totalShares),
-      saves: Math.max(0, (currentMetrics.totalSaves || 0) - previousSnapshot.snapshot.totalSaves),
-      watchTime: Math.max(0, (currentMetrics.totalWatchTime || 0) - previousSnapshot.snapshot.totalWatchTime),
-      impressions: Math.max(0, (currentMetrics.totalImpressions || 0) - previousSnapshot.snapshot.totalImpressions),
-      reach: Math.max(0, (currentMetrics.totalReach || 0) - previousSnapshot.snapshot.totalReach),
+      likes: Math.max(
+        0,
+        currentMetrics.totalLikes - previousSnapshot.snapshot.totalLikes
+      ),
+      dislikes: Math.max(
+        0,
+        (currentMetrics.totalDislikes || 0) -
+          previousSnapshot.snapshot.totalDislikes
+      ),
+      comments: Math.max(
+        0,
+        currentMetrics.totalComments - previousSnapshot.snapshot.totalComments
+      ),
+      views: Math.max(
+        0,
+        currentMetrics.totalViews - previousSnapshot.snapshot.totalViews
+      ),
+      shares: Math.max(
+        0,
+        (currentMetrics.totalShares || 0) -
+          previousSnapshot.snapshot.totalShares
+      ),
+      saves: Math.max(
+        0,
+        (currentMetrics.totalSaves || 0) - previousSnapshot.snapshot.totalSaves
+      ),
+      watchTime: Math.max(
+        0,
+        (currentMetrics.totalWatchTime || 0) -
+          previousSnapshot.snapshot.totalWatchTime
+      ),
+      impressions: Math.max(
+        0,
+        (currentMetrics.totalImpressions || 0) -
+          previousSnapshot.snapshot.totalImpressions
+      ),
+      reach: Math.max(
+        0,
+        (currentMetrics.totalReach || 0) - previousSnapshot.snapshot.totalReach
+      ),
     };
 
     logger.info("Calculated engagement delta:", {
@@ -257,7 +339,7 @@ class SparksService {
       platform: previousSnapshot.platform,
       delta,
       previousTotal: previousSnapshot.snapshot.totalLikes,
-      currentTotal: currentMetrics.totalLikes
+      currentTotal: currentMetrics.totalLikes,
     });
 
     return delta;
@@ -273,38 +355,38 @@ class SparksService {
     if (!rates) {
       logger.warn(`No Sparks rates defined for platform: ${platform}`);
       // Default calculation
-      return (delta.likes * 1) + (delta.comments * 2) + (delta.views * 0.01);
+      return delta.likes * 1 + delta.comments * 2 + delta.views * 0.01;
     }
 
     let totalSparks = 0;
 
-    if (platformKey === 'youtube') {
+    if (platformKey === "youtube") {
       const youtubeRates = rates as typeof SPARKS_RATES.youtube;
       totalSparks += delta.likes * youtubeRates.like;
       totalSparks += delta.dislikes * youtubeRates.dislike;
       totalSparks += delta.comments * youtubeRates.comment;
       totalSparks += delta.views * youtubeRates.view;
       totalSparks += delta.watchTime * youtubeRates.watchHour;
-    } else if (platformKey === 'instagram') {
+    } else if (platformKey === "instagram") {
       const instagramRates = rates as typeof SPARKS_RATES.instagram;
       totalSparks += delta.likes * instagramRates.like;
       totalSparks += delta.comments * instagramRates.comment;
       totalSparks += delta.views * instagramRates.view;
       totalSparks += delta.saves * instagramRates.save;
       totalSparks += delta.shares * instagramRates.share;
-    } else if (platformKey === 'twitter') {
+    } else if (platformKey === "twitter") {
       const twitterRates = rates as typeof SPARKS_RATES.twitter;
       totalSparks += delta.likes * twitterRates.like;
       totalSparks += delta.comments * twitterRates.comment;
       totalSparks += delta.shares * twitterRates.retweet;
       totalSparks += delta.impressions * twitterRates.impression;
-    } else if (platformKey === 'tiktok') {
+    } else if (platformKey === "tiktok") {
       const tiktokRates = rates as typeof SPARKS_RATES.tiktok;
       totalSparks += delta.likes * tiktokRates.like;
       totalSparks += delta.comments * tiktokRates.comment;
       totalSparks += delta.views * tiktokRates.view;
       totalSparks += delta.shares * tiktokRates.share;
-    } else if (platformKey === 'spotify') {
+    } else if (platformKey === "spotify") {
       const spotifyRates = rates as typeof SPARKS_RATES.spotify;
       totalSparks += delta.views * spotifyRates.stream; // views = streams for Spotify
     }
@@ -357,7 +439,7 @@ class SparksService {
         accountId,
         platform,
         sparksGenerated,
-        contentCount
+        contentCount,
       });
 
       return snapshot;
@@ -365,7 +447,7 @@ class SparksService {
       logger.error("Failed to save engagement snapshot:", {
         userId,
         accountId,
-        error: error.message
+        error: error.message,
       });
       throw error;
     }
@@ -384,66 +466,162 @@ class SparksService {
         throw new Error("User not found");
       }
 
-      // Update Sparks and consolidated metrics
-      user.wavzProfile.sparks = totalResult.totalSparks;
-      user.wavzProfile.creatorStats.totalLikes = totalResult.consolidatedMetrics.totalLikes;
-      user.wavzProfile.creatorStats.totalComments = totalResult.consolidatedMetrics.totalComments;
-      user.wavzProfile.creatorStats.totalViews = totalResult.consolidatedMetrics.totalViews;
-      user.wavzProfile.creatorStats.followerCount = totalResult.consolidatedMetrics.totalFollowers;
-      user.wavzProfile.creatorStats.totalPosts = totalResult.consolidatedMetrics.totalPosts;
+      const levelInfo = this.calculateLevelInfo(user.wavzProfile.sparks);
+      const levelNames = [
+        "",
+        "Pulse",
+        "Rhythm",
+        "Harmony",
+        "Melody",
+        "Resonance",
+      ];
 
-      // Update platform-specific stats
-      totalResult.platformBreakdown.forEach((platformResult: SparksCalculationResult) => {
-        const platform = platformResult.platform.toLowerCase();
-        const metrics = platformResult.metrics;
-
-        if (platform === 'youtube') {
-          user.wavzProfile.creatorStats.platformStats.youtube.likes = metrics.totalLikes || 0;
-          user.wavzProfile.creatorStats.platformStats.youtube.dislikes = metrics.totalDislikes || 0;
-          user.wavzProfile.creatorStats.platformStats.youtube.comments = metrics.totalComments || 0;
-          user.wavzProfile.creatorStats.platformStats.youtube.views = metrics.totalViews || 0;
-          user.wavzProfile.creatorStats.platformStats.youtube.watchTime = metrics.totalWatchTime || 0;
-          user.wavzProfile.creatorStats.platformStats.youtube.subscribers = metrics.followerCount || 0;
-        } else if (platform === 'instagram') {
-          user.wavzProfile.creatorStats.platformStats.instagram.likes = metrics.totalLikes || 0;
-          user.wavzProfile.creatorStats.platformStats.instagram.comments = metrics.totalComments || 0;
-          user.wavzProfile.creatorStats.platformStats.instagram.views = metrics.totalViews || 0;
-          user.wavzProfile.creatorStats.platformStats.instagram.saves = metrics.totalSaves || 0;
-          user.wavzProfile.creatorStats.platformStats.instagram.shares = metrics.totalShares || 0;
-          user.wavzProfile.creatorStats.platformStats.instagram.followers = metrics.followerCount || 0;
-        } else if (platform === 'twitter') {
-          user.wavzProfile.creatorStats.platformStats.twitter.likes = metrics.totalLikes || 0;
-          user.wavzProfile.creatorStats.platformStats.twitter.comments = metrics.totalComments || 0;
-          user.wavzProfile.creatorStats.platformStats.twitter.retweets = metrics.totalShares || 0;
-          user.wavzProfile.creatorStats.platformStats.twitter.impressions = metrics.totalImpressions || 0;
-          user.wavzProfile.creatorStats.platformStats.twitter.followers = metrics.followerCount || 0;
-        } else if (platform === 'tiktok') {
-          user.wavzProfile.creatorStats.platformStats.tiktok.likes = metrics.totalLikes || 0;
-          user.wavzProfile.creatorStats.platformStats.tiktok.comments = metrics.totalComments || 0;
-          user.wavzProfile.creatorStats.platformStats.tiktok.views = metrics.totalViews || 0;
-          user.wavzProfile.creatorStats.platformStats.tiktok.shares = metrics.totalShares || 0;
-          user.wavzProfile.creatorStats.platformStats.tiktok.followers = metrics.followerCount || 0;
-        } else if (platform === 'spotify') {
-          user.wavzProfile.creatorStats.platformStats.spotify.streams = metrics.totalViews || 0; // streams as views
-          user.wavzProfile.creatorStats.platformStats.spotify.followers = metrics.followerCount || 0;
-        }
-      });
-
-      await user.save();
-
-      logger.info("Updated user Sparks successfully:", {
-        userId,
-        totalSparks: totalResult.totalSparks,
-        platformCount: totalResult.platformBreakdown.length
-      });
-
-    } catch (error: any) {
-      logger.error("Failed to update user Sparks:", {
-        userId,
-        error: error.message
-      });
+      return {
+        sparks: user.wavzProfile.sparks,
+        level: levelInfo.currentLevel,
+        levelName: levelNames[levelInfo.currentLevel],
+        progress: levelInfo.progress,
+        nextLevelAt: levelInfo.nextLevelAt,
+      };
+    } catch (error) {
+      logger.error("Getting user sparks info failed:", error);
       throw error;
     }
+  }
+
+  /**
+   * Manual Sparks adjustment (admin only)
+   */
+  async adjustSparks(
+    userId: string,
+    adjustment: number,
+    reason: string
+  ): Promise<{ newTotal: number; levelChange: boolean }> {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const oldSparks = user.wavzProfile.sparks;
+      const oldLevel = user.wavzProfile.level;
+
+      const newSparks = Math.max(0, oldSparks + adjustment);
+      const levelInfo = this.calculateLevelInfo(newSparks);
+
+      await User.findByIdAndUpdate(userId, {
+        "wavzProfile.sparks": newSparks,
+        "wavzProfile.level": levelInfo.currentLevel,
+        "wavzProfile.levelProgress": Math.round(levelInfo.progress),
+      });
+
+      logger.info("Sparks manually adjusted:", {
+        userId,
+        oldSparks,
+        adjustment,
+        newSparks,
+        reason,
+        levelChange: oldLevel !== levelInfo.currentLevel,
+      });
+
+      return {
+        newTotal: newSparks,
+        levelChange: oldLevel !== levelInfo.currentLevel,
+      };
+    } catch (error) {
+      logger.error("Sparks adjustment failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get Sparks leaderboard
+   */
+  async getSparksLeaderboard(limit: number = 50): Promise<
+    Array<{
+      userId: string;
+      displayName: string;
+      sparks: number;
+      level: number;
+      levelName: string;
+    }>
+  > {
+    try {
+      const users = await User.find({})
+        .sort({ "wavzProfile.sparks": -1 })
+        .limit(limit)
+        .select("displayName wavzProfile.sparks wavzProfile.level")
+        .exec();
+
+      const levelNames = [
+        "",
+        "Pulse",
+        "Rhythm",
+        "Harmony",
+        "Melody",
+        "Resonance",
+      ];
+
+      return users.map((user) => ({
+        userId: user._id.toString(),
+        displayName: user.displayName,
+        sparks: user.wavzProfile.sparks,
+        level: user.wavzProfile.level,
+        levelName: levelNames[user.wavzProfile.level] || "Unknown",
+      }));
+    } catch (error) {
+      logger.error("Getting sparks leaderboard failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * LEGACY METHODS - For backward compatibility with existing routes
+   * These maintain the old direct engagement → sparks flow for existing integrations
+   */
+
+  /**
+   * Legacy method: Calculate platform sparks directly from metrics (old flow)
+   */
+  calculatePlatformSparks(platformMetrics: any): any {
+    // This is the old flow for backward compatibility
+    // You can choose to either:
+    // 1. Return a default response
+    // 2. Or map this to the new cPoints flow
+
+    logger.warn(
+      "Using legacy calculatePlatformSparks method - consider updating to new cPoints flow"
+    );
+
+    return {
+      totalSparks: 0,
+      breakdown: {},
+      platform: platformMetrics.platform || "unknown",
+    };
+  }
+
+  /**
+   * Legacy method: Calculate total sparks (old flow)
+   */
+  calculateTotalSparks(platformResults: any[]): any {
+    logger.warn(
+      "Using legacy calculateTotalSparks method - consider updating to new cPoints flow"
+    );
+    return {
+      totalSparks: 0,
+      platformBreakdown: [],
+      consolidatedMetrics: {},
+    };
+  }
+
+  /**
+   * Legacy method: Update user sparks (made public for backward compatibility)
+   */
+  async updateUserSparksLegacy(
+    userId: string,
+    totalSparks: number
+  ): Promise<void> {
+    return this.updateUserSparks(userId, totalSparks);
   }
 }
 

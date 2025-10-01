@@ -869,7 +869,7 @@ router.post(
       const totalResult = sparksService.calculateTotalSparks(platformResults);
 
       // Update user's Wavz profile with calculated Sparks
-      await sparksService.updateUserSparks(req.user._id.toString(), totalResult);
+      await sparksService.updateUserSparksLegacy(req.user._id.toString(), totalResult.totalSparks);
 
       const totalDuration = Date.now() - startTime;
 

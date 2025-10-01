@@ -176,7 +176,7 @@ class InsightIQService {
       "IDENTITY.AUDIENCE",
       "ENGAGEMENT",
       "ENGAGEMENT.COMMENTS",
-      "INCOME"
+      "INCOME",
     ]
   ): Promise<InsightIQSDKTokenResponse> {
     try {
@@ -269,7 +269,9 @@ class InsightIQService {
     try {
       await this.apiClient.post(`/v1/accounts/${accountId}/disconnect`, {});
 
-      logger.info("Successfully disconnected account from InsightIQ:", { accountId });
+      logger.info("Successfully disconnected account from InsightIQ:", {
+        accountId,
+      });
       return true;
     } catch (error: any) {
       logger.error(
@@ -380,6 +382,7 @@ class InsightIQService {
   /**
    * Get content engagement metrics for a specific connected account
    * This is the main method for Sparks calculation
+   * Now uses profile endpoint for better engagement data
    */
   async getContentMetrics(
     accountId: string,
@@ -400,9 +403,9 @@ class InsightIQService {
         params,
       });
 
-      logger.info("Retrieved content metrics:", {
+      logger.info("Retrieved profile engagement data:", {
         accountId,
-        contentCount: response.data.data?.length || 0,
+        profileCount: response.data.data?.length || 0,
         fromDate,
         platform: response.data.data?.[0]?.work_platform?.name || "unknown",
       });
@@ -554,8 +557,8 @@ class InsightIQService {
    */
   async getProfile(accountId: string): Promise<any> {
     try {
-      const response = await this.apiClient.get('/v1/profiles', {
-        params: { account_id: accountId }
+      const response = await this.apiClient.get("/v1/profiles", {
+        params: { account_id: accountId },
       });
 
       const profileData = response.data.data?.[0]; // Get first profile
@@ -564,7 +567,7 @@ class InsightIQService {
         accountId,
         followerCount: profileData?.reputation?.follower_count,
         subscriberCount: profileData?.reputation?.subscriber_count,
-        platform: profileData?.work_platform?.name
+        platform: profileData?.work_platform?.name,
       });
 
       return profileData;
@@ -617,10 +620,13 @@ class InsightIQService {
       try {
         profileData = await this.getProfile(accountId);
       } catch (profileError: any) {
-        logger.warn("Failed to fetch profile data (will use account data only):", {
-          accountId,
-          error: profileError.message,
-        });
+        logger.warn(
+          "Failed to fetch profile data (will use account data only):",
+          {
+            accountId,
+            error: profileError.message,
+          }
+        );
         // Don't return - continue with account data only
       }
 
