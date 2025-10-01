@@ -172,10 +172,11 @@ class InsightIQService {
   async generateSDKToken(
     userId: string,
     products: string[] = [
-      "INCOME",
-      "ENGAGEMENT",
-      "ENGAGEMENT_AUDIENCE",
       "IDENTITY",
+      "IDENTITY.AUDIENCE",
+      "ENGAGEMENT",
+      "ENGAGEMENT.COMMENTS",
+      "INCOME"
     ]
   ): Promise<InsightIQSDKTokenResponse> {
     try {
@@ -262,16 +263,17 @@ class InsightIQService {
 
   /**
    * Disconnect a social media account
+   * Uses POST /v1/accounts/{id}/disconnect as per InsightIQ API
    */
   async disconnectAccount(accountId: string): Promise<boolean> {
     try {
-      await this.apiClient.delete(`/v1/accounts/${accountId}`);
+      await this.apiClient.post(`/v1/accounts/${accountId}/disconnect`, {});
 
-      logger.info("Successfully disconnected account:", { accountId });
+      logger.info("Successfully disconnected account from InsightIQ:", { accountId });
       return true;
     } catch (error: any) {
       logger.error(
-        "Failed to disconnect account:",
+        "Failed to disconnect account from InsightIQ:",
         error.response?.data || error.message
       );
       return false;
@@ -326,18 +328,22 @@ class InsightIQService {
   /**
    * Get work platform details by work platform ID
    */
-  async getWorkPlatform(workPlatformId: string): Promise<{name: string, category: string}> {
+  async getWorkPlatform(
+    workPlatformId: string
+  ): Promise<{ name: string; category: string }> {
     try {
-      const response = await this.apiClient.get(`/v1/work-platforms/${workPlatformId}`);
+      const response = await this.apiClient.get(
+        `/v1/work-platforms/${workPlatformId}`
+      );
 
       logger.info("Retrieved work platform details:", {
         workPlatformId,
-        name: response.data.name
+        name: response.data.name,
       });
 
       return {
         name: response.data.name,
-        category: response.data.category
+        category: response.data.category,
       };
     } catch (error: any) {
       logger.error(
@@ -358,7 +364,7 @@ class InsightIQService {
       logger.info("Retrieved account details:", {
         accountId,
         platform: response.data.work_platform?.name,
-        username: response.data.username
+        username: response.data.username,
       });
 
       return response.data;
@@ -375,24 +381,30 @@ class InsightIQService {
    * Get content engagement metrics for a specific connected account
    * This is the main method for Sparks calculation
    */
-  async getContentMetrics(accountId: string, fromDate?: string, limit: number = 100): Promise<any> {
+  async getContentMetrics(
+    accountId: string,
+    fromDate?: string,
+    limit: number = 100
+  ): Promise<any> {
     try {
       const params: any = {
         account_id: accountId,
-        limit: limit
+        limit: limit,
       };
 
       if (fromDate) {
         params.from_date = fromDate;
       }
 
-      const response = await this.apiClient.get('/v1/social/contents', { params });
+      const response = await this.apiClient.get("/v1/social/contents", {
+        params,
+      });
 
       logger.info("Retrieved content metrics:", {
         accountId,
         contentCount: response.data.data?.length || 0,
         fromDate,
-        platform: response.data.data?.[0]?.work_platform?.name || "unknown"
+        platform: response.data.data?.[0]?.work_platform?.name || "unknown",
       });
 
       return response.data;
@@ -402,6 +414,85 @@ class InsightIQService {
         error.response?.data || error.message
       );
       throw new Error("Failed to retrieve content metrics");
+    }
+  }
+
+  /**
+   * Get ALL content with pagination for comprehensive engagement tracking
+   * Fetches all posts to ensure accurate delta calculation
+   */
+  async getAllContentWithEngagements(
+    accountId: string,
+    fromDate?: string
+  ): Promise<any[]> {
+    try {
+      const allContent: any[] = [];
+      let offset = 0;
+      const limit = 100; // Max allowed by InsightIQ API
+      let hasMore = true;
+
+      logger.info("Starting paginated content fetch:", {
+        accountId,
+        fromDate,
+        limit,
+      });
+
+      while (hasMore) {
+        const params: any = {
+          account_id: accountId,
+          limit: limit,
+          offset: offset,
+        };
+
+        if (fromDate) {
+          params.from_date = fromDate;
+        }
+
+        const response = await this.apiClient.get("/v1/social/contents", {
+          params,
+        });
+
+        if (response.data.data && response.data.data.length > 0) {
+          allContent.push(...response.data.data);
+          offset += limit;
+
+          // If we got less than limit, we've reached the end
+          if (response.data.data.length < limit) {
+            hasMore = false;
+          }
+
+          logger.info("Fetched content batch:", {
+            accountId,
+            batchSize: response.data.data.length,
+            totalSoFar: allContent.length,
+            offset,
+          });
+        } else {
+          hasMore = false;
+        }
+
+        // Safety limit: max 1000 posts per sync to avoid infinite loops
+        if (allContent.length >= 1000) {
+          logger.warn("Reached maximum content limit (1000 posts):", {
+            accountId,
+          });
+          hasMore = false;
+        }
+      }
+
+      logger.info("Completed paginated content fetch:", {
+        accountId,
+        totalContent: allContent.length,
+        platform: allContent[0]?.work_platform?.name || "unknown",
+      });
+
+      return allContent;
+    } catch (error: any) {
+      logger.error(
+        "Failed to get all content with engagements:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve all content");
     }
   }
 
@@ -420,10 +511,10 @@ class InsightIQService {
       totalWatchTime: 0,
       totalImpressions: 0,
       totalReach: 0,
-      platform: contentData[0]?.work_platform?.name || "unknown"
+      platform: contentData[0]?.work_platform?.name || "unknown",
     };
 
-    contentData.forEach(content => {
+    contentData.forEach((content) => {
       const engagement = content.engagement || {};
       aggregated.totalLikes += engagement.like_count || 0;
       aggregated.totalDislikes += engagement.dislike_count || 0;
@@ -458,12 +549,47 @@ class InsightIQService {
   }
 
   /**
+   * Get profile information including follower count and reputation metrics
+   * Requires IDENTITY product
+   */
+  async getProfile(accountId: string): Promise<any> {
+    try {
+      const response = await this.apiClient.get('/v1/profiles', {
+        params: { account_id: accountId }
+      });
+
+      const profileData = response.data.data?.[0]; // Get first profile
+
+      logger.info("Retrieved profile data:", {
+        accountId,
+        followerCount: profileData?.reputation?.follower_count,
+        subscriberCount: profileData?.reputation?.subscriber_count,
+        platform: profileData?.work_platform?.name
+      });
+
+      return profileData;
+    } catch (error: any) {
+      logger.error(
+        "Failed to get profile:",
+        error.response?.data || error.message
+      );
+      throw new Error("Failed to retrieve profile");
+    }
+  }
+
+  /**
    * Enrich account data by fetching detailed information from InsightIQ API
    * This is called in the background after a Phyllo callback
    */
-  async enrichAccountData(insightIqUserId: string, accountId: string): Promise<void> {
+  async enrichAccountData(
+    insightIqUserId: string,
+    accountId: string
+  ): Promise<void> {
     try {
-      logger.info("Starting account data enrichment:", { insightIqUserId, accountId });
+      logger.info("Starting account data enrichment:", {
+        insightIqUserId,
+        accountId,
+      });
 
       // Get specific account details using the correct endpoint
       let accountData;
@@ -473,15 +599,29 @@ class InsightIQService {
         logger.warn("Failed to fetch account details from InsightIQ API:", {
           accountId,
           error: apiError.message,
-          status: apiError.response?.status
+          status: apiError.response?.status,
         });
         // Don't throw - just skip enrichment if API is unavailable
         return;
       }
 
       if (!accountData) {
-        logger.warn("Account not found in InsightIQ for enrichment:", { accountId });
+        logger.warn("Account not found in InsightIQ for enrichment:", {
+          accountId,
+        });
         return;
+      }
+
+      // Get profile data for follower count and reputation metrics
+      let profileData;
+      try {
+        profileData = await this.getProfile(accountId);
+      } catch (profileError: any) {
+        logger.warn("Failed to fetch profile data (will use account data only):", {
+          accountId,
+          error: profileError.message,
+        });
+        // Don't return - continue with account data only
       }
 
       // Import User model here to avoid circular dependencies
@@ -490,25 +630,43 @@ class InsightIQService {
       // Find user and update account with enriched data
       const user = await User.findOne({ "insightIQ.userId": insightIqUserId });
       if (!user) {
-        logger.warn("User not found for account enrichment - may have been deleted:", { insightIqUserId });
+        logger.warn(
+          "User not found for account enrichment - may have been deleted:",
+          { insightIqUserId }
+        );
         return;
       }
 
       const accountIndex = user.insightIQ!.connectedAccounts.findIndex(
-        account => account.accountId === accountId
+        (account) => account.accountId === accountId
       );
 
       if (accountIndex === -1) {
-        logger.warn("Account not found in user's connected accounts - may have been removed:", { accountId });
+        logger.warn(
+          "Account not found in user's connected accounts - may have been removed:",
+          { accountId }
+        );
         return;
       }
 
       // Update with enriched data from InsightIQ
       const account = user.insightIQ!.connectedAccounts[accountIndex];
-      account.username = accountData.username || accountData.platform_username || account.username;
-      account.displayName = accountData.platform_profile_name || account.displayName;
+      account.username =
+        accountData.username ||
+        accountData.platform_username ||
+        account.username;
+      account.displayName =
+        accountData.platform_profile_name || account.displayName;
       account.profilePicture = accountData.profile_pic_url;
-      // Note: follower count would need separate API call to get metrics
+
+      // Update follower count from profile data
+      if (profileData?.reputation) {
+        account.followerCount =
+          profileData.reputation.follower_count ||
+          profileData.reputation.subscriber_count ||
+          0;
+      }
+
       account.lastSyncAt = new Date();
 
       await user.save();
@@ -517,9 +675,9 @@ class InsightIQService {
         accountId,
         username: account.username,
         displayName: account.displayName,
-        platform: accountData.work_platform?.name
+        followerCount: account.followerCount,
+        platform: accountData.work_platform?.name,
       });
-
     } catch (error: any) {
       logger.warn("Account data enrichment failed (non-critical):", {
         insightIqUserId,

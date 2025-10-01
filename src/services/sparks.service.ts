@@ -1,4 +1,5 @@
 import { logger } from "../config/logger";
+import { EngagementSnapshot, IEngagementSnapshot } from "../models/EngagementSnapshot";
 
 // Dummy Sparks rates - client will provide real rates later
 export const SPARKS_RATES = {
@@ -98,48 +99,53 @@ class SparksService {
 
     // Calculate based on platform-specific rates
     if (platform === 'youtube') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.dislikes = (metrics.totalDislikes || 0) * rates.dislike;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.watchTime = (metrics.totalWatchTime || 0) * rates.watchHour;
-      breakdown.followers = (metrics.followerCount || 0) * rates.subscriber;
+      const youtubeRates = rates as typeof SPARKS_RATES.youtube;
+      breakdown.likes = (metrics.totalLikes || 0) * youtubeRates.like;
+      breakdown.dislikes = (metrics.totalDislikes || 0) * youtubeRates.dislike;
+      breakdown.comments = (metrics.totalComments || 0) * youtubeRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * youtubeRates.view;
+      breakdown.watchTime = (metrics.totalWatchTime || 0) * youtubeRates.watchHour;
+      breakdown.followers = (metrics.followerCount || 0) * youtubeRates.subscriber;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
     }
     else if (platform === 'instagram') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.saves = (metrics.totalSaves || 0) * rates.save;
-      breakdown.shares = (metrics.totalShares || 0) * rates.share;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const instagramRates = rates as typeof SPARKS_RATES.instagram;
+      breakdown.likes = (metrics.totalLikes || 0) * instagramRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * instagramRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * instagramRates.view;
+      breakdown.saves = (metrics.totalSaves || 0) * instagramRates.save;
+      breakdown.shares = (metrics.totalShares || 0) * instagramRates.share;
+      breakdown.followers = (metrics.followerCount || 0) * instagramRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
     }
     else if (platform === 'twitter') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.shares = (metrics.totalShares || 0) * rates.retweet; // retweets
-      breakdown.impressions = (metrics.totalImpressions || 0) * rates.impression;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const twitterRates = rates as typeof SPARKS_RATES.twitter;
+      breakdown.likes = (metrics.totalLikes || 0) * twitterRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * twitterRates.comment;
+      breakdown.shares = (metrics.totalShares || 0) * twitterRates.retweet; // retweets
+      breakdown.impressions = (metrics.totalImpressions || 0) * twitterRates.impression;
+      breakdown.followers = (metrics.followerCount || 0) * twitterRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
     }
     else if (platform === 'tiktok') {
-      breakdown.likes = (metrics.totalLikes || 0) * rates.like;
-      breakdown.comments = (metrics.totalComments || 0) * rates.comment;
-      breakdown.views = (metrics.totalViews || 0) * rates.view;
-      breakdown.shares = (metrics.totalShares || 0) * rates.share;
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const tiktokRates = rates as typeof SPARKS_RATES.tiktok;
+      breakdown.likes = (metrics.totalLikes || 0) * tiktokRates.like;
+      breakdown.comments = (metrics.totalComments || 0) * tiktokRates.comment;
+      breakdown.views = (metrics.totalViews || 0) * tiktokRates.view;
+      breakdown.shares = (metrics.totalShares || 0) * tiktokRates.share;
+      breakdown.followers = (metrics.followerCount || 0) * tiktokRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
     }
     else if (platform === 'spotify') {
-      breakdown.views = (metrics.totalViews || 0) * rates.stream; // streams as views
-      breakdown.followers = (metrics.followerCount || 0) * rates.follower;
+      const spotifyRates = rates as typeof SPARKS_RATES.spotify;
+      breakdown.views = (metrics.totalViews || 0) * spotifyRates.stream; // streams as views
+      breakdown.followers = (metrics.followerCount || 0) * spotifyRates.follower;
 
-      totalSparks = Object.values(breakdown).reduce((sum: number, value: number) => sum + value, 0);
+      totalSparks = (Object.values(breakdown) as number[]).reduce((sum: number, value: number) => sum + value, 0);
     }
 
     logger.info("Calculated platform Sparks:", {
@@ -191,6 +197,178 @@ class SparksService {
       platformBreakdown: platformResults,
       consolidatedMetrics
     };
+  }
+
+  /**
+   * Get the last engagement snapshot for an account
+   */
+  async getLastSnapshot(userId: string, accountId: string): Promise<IEngagementSnapshot | null> {
+    try {
+      const snapshot = await EngagementSnapshot.findOne({
+        userId,
+        accountId
+      }).sort({ syncedAt: -1 });
+
+      return snapshot;
+    } catch (error: any) {
+      logger.error("Failed to get last snapshot:", {
+        userId,
+        accountId,
+        error: error.message
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Calculate delta between current and previous snapshot
+   */
+  calculateDelta(currentMetrics: PlatformMetrics, previousSnapshot: IEngagementSnapshot | null): any {
+    if (!previousSnapshot) {
+      // First sync - all current metrics are "new"
+      return {
+        likes: currentMetrics.totalLikes,
+        dislikes: currentMetrics.totalDislikes || 0,
+        comments: currentMetrics.totalComments,
+        views: currentMetrics.totalViews,
+        shares: currentMetrics.totalShares || 0,
+        saves: currentMetrics.totalSaves || 0,
+        watchTime: currentMetrics.totalWatchTime || 0,
+        impressions: currentMetrics.totalImpressions || 0,
+        reach: currentMetrics.totalReach || 0,
+      };
+    }
+
+    // Calculate what's NEW since last sync
+    const delta = {
+      likes: Math.max(0, currentMetrics.totalLikes - previousSnapshot.snapshot.totalLikes),
+      dislikes: Math.max(0, (currentMetrics.totalDislikes || 0) - previousSnapshot.snapshot.totalDislikes),
+      comments: Math.max(0, currentMetrics.totalComments - previousSnapshot.snapshot.totalComments),
+      views: Math.max(0, currentMetrics.totalViews - previousSnapshot.snapshot.totalViews),
+      shares: Math.max(0, (currentMetrics.totalShares || 0) - previousSnapshot.snapshot.totalShares),
+      saves: Math.max(0, (currentMetrics.totalSaves || 0) - previousSnapshot.snapshot.totalSaves),
+      watchTime: Math.max(0, (currentMetrics.totalWatchTime || 0) - previousSnapshot.snapshot.totalWatchTime),
+      impressions: Math.max(0, (currentMetrics.totalImpressions || 0) - previousSnapshot.snapshot.totalImpressions),
+      reach: Math.max(0, (currentMetrics.totalReach || 0) - previousSnapshot.snapshot.totalReach),
+    };
+
+    logger.info("Calculated engagement delta:", {
+      accountId: previousSnapshot.accountId,
+      platform: previousSnapshot.platform,
+      delta,
+      previousTotal: previousSnapshot.snapshot.totalLikes,
+      currentTotal: currentMetrics.totalLikes
+    });
+
+    return delta;
+  }
+
+  /**
+   * Calculate Sparks from delta metrics (only NEW engagements)
+   */
+  calculateSparksFromDelta(delta: any, platform: string): number {
+    const platformKey = platform.toLowerCase() as keyof typeof SPARKS_RATES;
+    const rates = SPARKS_RATES[platformKey];
+
+    if (!rates) {
+      logger.warn(`No Sparks rates defined for platform: ${platform}`);
+      // Default calculation
+      return (delta.likes * 1) + (delta.comments * 2) + (delta.views * 0.01);
+    }
+
+    let totalSparks = 0;
+
+    if (platformKey === 'youtube') {
+      const youtubeRates = rates as typeof SPARKS_RATES.youtube;
+      totalSparks += delta.likes * youtubeRates.like;
+      totalSparks += delta.dislikes * youtubeRates.dislike;
+      totalSparks += delta.comments * youtubeRates.comment;
+      totalSparks += delta.views * youtubeRates.view;
+      totalSparks += delta.watchTime * youtubeRates.watchHour;
+    } else if (platformKey === 'instagram') {
+      const instagramRates = rates as typeof SPARKS_RATES.instagram;
+      totalSparks += delta.likes * instagramRates.like;
+      totalSparks += delta.comments * instagramRates.comment;
+      totalSparks += delta.views * instagramRates.view;
+      totalSparks += delta.saves * instagramRates.save;
+      totalSparks += delta.shares * instagramRates.share;
+    } else if (platformKey === 'twitter') {
+      const twitterRates = rates as typeof SPARKS_RATES.twitter;
+      totalSparks += delta.likes * twitterRates.like;
+      totalSparks += delta.comments * twitterRates.comment;
+      totalSparks += delta.shares * twitterRates.retweet;
+      totalSparks += delta.impressions * twitterRates.impression;
+    } else if (platformKey === 'tiktok') {
+      const tiktokRates = rates as typeof SPARKS_RATES.tiktok;
+      totalSparks += delta.likes * tiktokRates.like;
+      totalSparks += delta.comments * tiktokRates.comment;
+      totalSparks += delta.views * tiktokRates.view;
+      totalSparks += delta.shares * tiktokRates.share;
+    } else if (platformKey === 'spotify') {
+      const spotifyRates = rates as typeof SPARKS_RATES.spotify;
+      totalSparks += delta.views * spotifyRates.stream; // views = streams for Spotify
+    }
+
+    return Math.round(totalSparks);
+  }
+
+  /**
+   * Save engagement snapshot to database
+   */
+  async saveSnapshot(
+    userId: string,
+    accountId: string,
+    platform: string,
+    currentMetrics: PlatformMetrics,
+    delta: any,
+    sparksGenerated: number,
+    contentCount: number,
+    syncDuration: number
+  ): Promise<IEngagementSnapshot> {
+    try {
+      const snapshot = new EngagementSnapshot({
+        userId,
+        accountId,
+        platform: platform.toLowerCase(),
+        syncedAt: new Date(),
+        snapshot: {
+          totalLikes: currentMetrics.totalLikes,
+          totalDislikes: currentMetrics.totalDislikes || 0,
+          totalComments: currentMetrics.totalComments,
+          totalViews: currentMetrics.totalViews,
+          totalShares: currentMetrics.totalShares || 0,
+          totalSaves: currentMetrics.totalSaves || 0,
+          totalWatchTime: currentMetrics.totalWatchTime || 0,
+          totalImpressions: currentMetrics.totalImpressions || 0,
+          totalReach: currentMetrics.totalReach || 0,
+          totalPosts: contentCount,
+        },
+        deltaFromPrevious: delta,
+        sparksGenerated,
+        cPointsAwarded: sparksGenerated, // For now, cPoints = Sparks (can add weighting later)
+        contentCount,
+        syncDuration,
+      });
+
+      await snapshot.save();
+
+      logger.info("Saved engagement snapshot:", {
+        userId,
+        accountId,
+        platform,
+        sparksGenerated,
+        contentCount
+      });
+
+      return snapshot;
+    } catch (error: any) {
+      logger.error("Failed to save engagement snapshot:", {
+        userId,
+        accountId,
+        error: error.message
+      });
+      throw error;
+    }
   }
 
   /**

@@ -131,7 +131,7 @@ router.post(
         return;
       }
 
-      const { products = ["IDENTITY", "ENGAGEMENT"] } = req.body;
+      const { products = ["IDENTITY", "IDENTITY.AUDIENCE", "ENGAGEMENT", "ENGAGEMENT.COMMENTS"] } = req.body;
 
       // Use enhanced token management with caching
       const tokenData = await insightIQService.getOrCreateSDKToken(
@@ -647,13 +647,15 @@ router.get(
 
 /**
  * @route POST /insightiq/calculate-sparks
- * @desc Get platform metrics and calculate Sparks for all connected accounts
+ * @desc Get platform metrics and calculate Sparks using delta approach (only NEW engagements)
  * @access Private
  */
 router.post(
   "/calculate-sparks",
   authenticateToken,
   async (req: Request, res: Response): Promise<void> => {
+    const startTime = Date.now();
+
     try {
       if (!req.user) {
         res.status(401).json({
@@ -684,81 +686,173 @@ router.post(
       }
 
       const platformResults = [];
+      const deltaBreakdown = [];
 
-      // Get content metrics for each connected account
+      // Process each connected account with delta tracking
       for (const account of connectedAccounts) {
         try {
-          logger.info("Fetching content metrics for account:", {
+          const accountStartTime = Date.now();
+
+          logger.info("Fetching ALL content with pagination for account:", {
             accountId: account.accountId,
             platform: account.platform,
             username: account.username
           });
 
-          // Get content data from InsightIQ
-          const contentResponse = await insightIQService.getContentMetrics(
-            account.accountId,
-            undefined, // fromDate - get recent content
-            100 // limit
+          // Fetch ALL content with pagination (not just 100)
+          const allContent = await insightIQService.getAllContentWithEngagements(
+            account.accountId
           );
 
-          if (contentResponse.data && contentResponse.data.length > 0) {
-            // Aggregate engagement metrics
-            const aggregatedMetrics = insightIQService.aggregateEngagementMetrics(
-              contentResponse.data
-            );
-
-            // Add follower count from account data
-            const platformMetrics = {
-              platform: account.platform,
-              totalLikes: aggregatedMetrics.totalLikes,
-              totalDislikes: aggregatedMetrics.totalDislikes,
-              totalComments: aggregatedMetrics.totalComments,
-              totalViews: aggregatedMetrics.totalViews,
-              totalShares: aggregatedMetrics.totalShares,
-              totalSaves: aggregatedMetrics.totalSaves,
-              totalWatchTime: aggregatedMetrics.totalWatchTime,
-              totalImpressions: aggregatedMetrics.totalImpressions,
-              totalReach: aggregatedMetrics.totalReach,
-              followerCount: account.followerCount || 0,
-            };
-
-            // Calculate Sparks for this platform
-            const sparksResult = sparksService.calculatePlatformSparks(platformMetrics);
-            platformResults.push(sparksResult);
-
-            logger.info("Platform Sparks calculated:", {
-              platform: account.platform,
-              totalSparks: sparksResult.totalSparks,
-              contentCount: contentResponse.data.length
-            });
-
-          } else {
-            logger.warn("No content data found for account:", {
+          if (allContent.length === 0) {
+            logger.warn("No content found for account:", {
               accountId: account.accountId,
               platform: account.platform
             });
-
-            // Create minimal metrics with just follower count
-            const platformMetrics = {
-              platform: account.platform,
-              totalLikes: 0,
-              totalComments: 0,
-              totalViews: 0,
-              followerCount: account.followerCount || 0,
-            };
-
-            const sparksResult = sparksService.calculatePlatformSparks(platformMetrics);
-            platformResults.push(sparksResult);
+            continue;
           }
 
+          // Aggregate current engagement totals
+          const aggregatedMetrics = insightIQService.aggregateEngagementMetrics(allContent);
+
+          // Fetch fresh profile data for accurate follower count
+          let followerCount = account.followerCount || 0;
+          let profileDataFetched = false;
+          try {
+            const profileData = await insightIQService.getProfile(account.accountId);
+            if (profileData?.reputation) {
+              followerCount =
+                profileData.reputation.follower_count ||
+                profileData.reputation.subscriber_count ||
+                0;
+
+              profileDataFetched = true;
+
+              logger.info("Fetched fresh follower count from profile:", {
+                accountId: account.accountId,
+                platform: account.platform,
+                followerCount
+              });
+
+              // Update account.followerCount in database with fresh data
+              try {
+                const { User } = await import("../models/User");
+                const userToUpdate = await User.findById(req.user._id);
+
+                if (userToUpdate) {
+                  const accountIdx = userToUpdate.insightIQ!.connectedAccounts.findIndex(
+                    (a) => a.accountId === account.accountId
+                  );
+
+                  if (accountIdx !== -1) {
+                    userToUpdate.insightIQ!.connectedAccounts[accountIdx].followerCount = followerCount;
+                    userToUpdate.insightIQ!.connectedAccounts[accountIdx].lastSyncAt = new Date();
+                    await userToUpdate.save();
+
+                    logger.info("Updated account followerCount in database:", {
+                      accountId: account.accountId,
+                      platform: account.platform,
+                      followerCount
+                    });
+                  }
+                }
+              } catch (dbError: any) {
+                logger.warn("Failed to update account followerCount in DB (non-critical):", {
+                  accountId: account.accountId,
+                  error: dbError.message
+                });
+              }
+            }
+          } catch (profileError: any) {
+            logger.warn("Could not fetch fresh profile data, using cached follower count:", {
+              accountId: account.accountId,
+              cachedFollowerCount: followerCount,
+              error: profileError.message
+            });
+          }
+
+          const currentMetrics = {
+            platform: account.platform,
+            totalLikes: aggregatedMetrics.totalLikes,
+            totalDislikes: aggregatedMetrics.totalDislikes,
+            totalComments: aggregatedMetrics.totalComments,
+            totalViews: aggregatedMetrics.totalViews,
+            totalShares: aggregatedMetrics.totalShares,
+            totalSaves: aggregatedMetrics.totalSaves,
+            totalWatchTime: aggregatedMetrics.totalWatchTime,
+            totalImpressions: aggregatedMetrics.totalImpressions,
+            totalReach: aggregatedMetrics.totalReach,
+            followerCount: followerCount,
+          };
+
+          // Get last snapshot for delta calculation
+          const lastSnapshot = await sparksService.getLastSnapshot(
+            req.user._id.toString(),
+            account.accountId
+          );
+
+          // Calculate delta (what's NEW since last sync)
+          const delta = sparksService.calculateDelta(currentMetrics, lastSnapshot);
+
+          // Calculate Sparks from DELTA only (not total)
+          const deltaSparks = sparksService.calculateSparksFromDelta(delta, account.platform);
+
+          // Save new snapshot
+          const accountDuration = Date.now() - accountStartTime;
+          await sparksService.saveSnapshot(
+            req.user._id.toString(),
+            account.accountId,
+            account.platform,
+            currentMetrics,
+            delta,
+            deltaSparks,
+            allContent.length,
+            accountDuration
+          );
+
+          // Use delta sparks for platform result
+          const platformMetrics = {
+            platform: account.platform,
+            totalLikes: delta.likes,
+            totalDislikes: delta.dislikes,
+            totalComments: delta.comments,
+            totalViews: delta.views,
+            totalShares: delta.shares,
+            totalSaves: delta.saves,
+            totalWatchTime: delta.watchTime,
+            totalImpressions: delta.impressions,
+            totalReach: delta.reach,
+            followerCount: account.followerCount || 0,
+          };
+
+          const sparksResult = sparksService.calculatePlatformSparks(platformMetrics);
+          platformResults.push(sparksResult);
+
+          // Track delta breakdown for frontend
+          deltaBreakdown.push({
+            platform: account.platform,
+            username: account.username,
+            delta,
+            sparksFromDelta: deltaSparks,
+            totalContent: allContent.length,
+            isFirstSync: !lastSnapshot,
+            previousTotal: lastSnapshot?.snapshot.totalLikes || 0,
+            currentTotal: currentMetrics.totalLikes
+          });
+
+          logger.info("Platform Sparks calculated (DELTA):", {
+            platform: account.platform,
+            deltaSparks,
+            contentCount: allContent.length,
+            isFirstSync: !lastSnapshot
+          });
+
         } catch (accountError: any) {
-          logger.error("Failed to get metrics for account:", {
+          logger.error("Failed to process account:", {
             accountId: account.accountId,
             platform: account.platform,
             error: accountError.message
           });
-
-          // Continue with other accounts even if one fails
           continue;
         }
       }
@@ -777,21 +871,26 @@ router.post(
       // Update user's Wavz profile with calculated Sparks
       await sparksService.updateUserSparks(req.user._id.toString(), totalResult);
 
-      logger.info("Sparks calculation completed:", {
+      const totalDuration = Date.now() - startTime;
+
+      logger.info("Sparks calculation completed (DELTA approach):", {
         userId: req.user._id,
         totalSparks: totalResult.totalSparks,
         platformCount: platformResults.length,
-        platforms: platformResults.map(p => p.platform)
+        platforms: platformResults.map(p => p.platform),
+        duration: totalDuration
       });
 
       res.json({
         success: true,
-        message: "Sparks calculated and updated successfully",
+        message: "Sparks calculated and updated successfully using delta tracking",
         data: {
           totalSparks: totalResult.totalSparks,
           platformBreakdown: totalResult.platformBreakdown,
+          deltaBreakdown, // NEW: show what changed
           consolidatedMetrics: totalResult.consolidatedMetrics,
           calculatedAt: new Date().toISOString(),
+          syncDuration: totalDuration,
         },
       });
 
