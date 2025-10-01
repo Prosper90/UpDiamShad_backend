@@ -79,3 +79,5 @@ docs/
 # Ignore any custom configuration files
 config/*.local.js
 config/*.local.json
+# InsightIQ API Documentation
+InsightQApiDoc*.txt
